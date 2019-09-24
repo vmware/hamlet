@@ -1,0 +1,106 @@
+// Copyright 2019 VMware, Inc. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+import "google/protobuf/any.proto";
+import "google/rpc/status.proto";
+
+package federation.resourcediscovery.v1alpha1;
+
+option go_package = "resourcediscovery/v1alpha1";
+
+// StreamRequest represents a streaming request sent by a federated service mesh
+// consumer to a federated service mesh owner.
+//
+// Following are some of the valid field combinations for a StreamRequest.
+//
+// * Initial request:
+//     resource_url   != ""
+//     response_nonce == ""
+//     status         == nil
+//
+// * ACK, request:
+//     resource_url   != ""
+//     response_nonce != ""
+//     status         != nil
+//       code         == OK
+//       message      == ""
+//
+// * NACK, request:
+//     resource_url   != ""
+//     response_nonce != ""
+//     status         != nil
+//       code         != OK
+//       message      != ""
+message StreamRequest {
+  // REQUIRED. The type URL of the resource being requested.
+  // Example: "type.googleapis.com/federation.types.v1alpha1.FederatedService"
+  string resource_url = 1;
+
+  // The nonce of a consumed StreamResponse to ACK/NACK. This field should be
+  // omitted in the first StreamRequest sent by the federated service mesh
+  // consumer.
+  string response_nonce = 2;
+
+  // The message consumption status of the client. This field should be omitted
+  // in the first StreamRequest sent by the federated service mesh consumer. If
+  // the message is consumed successfully, the status code should be set to OK.
+  // If there is a failure in consuming a message, an appropriate status code
+  // must be set along with the error details in the status' message field.
+  google.rpc.Status status = 3;
+}
+
+// StreamResponse represents a streaming response sent by a federated service
+// mesh owner to a federated service mesh consumer.
+message StreamResponse {
+  // REQUIRED. The unique identifier for a StreamResponse.
+  string nonce = 1;
+
+  // REQUIRED. The type URL of the resource being returned in the response.
+  // Example: "type.googleapis.com/federation.types.v1alpha1.FederatedService"
+  string resource_url = 2;
+
+  // REQUIRED. The typed resource in relation to which an operation is to be
+  // performed.
+  google.protobuf.Any resource = 3;
+
+  // Operation defines the set of possible operations that can be performed in
+  // relation to a resource.
+  enum Operation {
+    // Specifies an unknown operation.
+    UNKNOWN = 0;
+
+    // Specifies a create operation.
+    CREATE = 1;
+
+    // Specifies an update operation.
+    UPDATE = 2;
+
+    // Specifies a delete operation.
+    DELETE = 3;
+  }
+
+  // REQUIRED. The operation to be performed in relation to the resource.
+  Operation operation = 4;
+}
+
+// DiscoveryService represents the API implemented by a federated service mesh
+// owner.
+service DiscoveryService {
+  // Establish a new stream with a federated service mesh owner. The federated
+  // service mesh owner can then send StreamResponse messages, and the federated
+  // service mesh consumer can ACK/NACK these via new StreamRequest messages.
+  rpc EstablishStream (stream StreamRequest) returns (stream StreamResponse);
+}
