@@ -35,6 +35,30 @@ stubs, you can use the following command.
 $ protoc -I external/ -I api/resourcediscovery/v1alpha1/ resource_discovery.proto --go_out=plugins=grpc:api/
 ```
 
+## Testing
+
+The project relies on the [mockgen](https://github.com/golang/mock#installation)
+tool for generating gRPC mocks for unit tests. Please make sure that you have it
+installed before proceeding.
+
+1\. Generate mocks.
+
+```console
+$ go generate ./...
+```
+
+2\. Run tests using [Ginkgo](https://onsi.github.io/ginkgo/) or `go test`.
+
+```console
+$ ginkgo -v ./...
+```
+
+OR
+
+```console
+$ go test -v ./...
+```
+
 ## Contributing
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) if you'd like to contribute.
