@@ -73,7 +73,10 @@ func (s *discoveryServiceServer) EstablishStream(stream rd.DiscoveryService_Esta
 		}).Errorln("Error occurred while initializing stream")
 		return err
 	}
-	log.WithField("initReq", initReq).Infoln("Consumer successfully subscribed to stream")
+	log.WithFields(log.Fields{
+		"initReq": initReq,
+		"streamId": streamId,
+	}).Infoln("Consumer successfully subscribed to stream")
 
 	// Close stream when exiting.
 	defer func() {
@@ -90,6 +93,10 @@ func (s *discoveryServiceServer) EstablishStream(stream rd.DiscoveryService_Esta
 				"err":     err,
 			}).Errorln("Error occurred during consumer deregistration")
 		}
+		log.WithFields(log.Fields{
+			"initReq": initReq,
+			"streamId": streamId,
+		}).Infoln("Consumer successfully unsubscribed from stream")
 	}()
 
 	// Initialize watch.
@@ -139,7 +146,11 @@ func (s *discoveryServiceServer) EstablishStream(stream rd.DiscoveryService_Esta
 
 		// Handle client disconnect.
 		case <-stream.Context().Done():
-			log.WithField("err", stream.Context().Err()).Errorln("Stream context was done")
+			log.WithFields(log.Fields{
+				"initReq": initReq,
+				"streamId": streamId,
+				"err": stream.Context().Err(),
+			}).Warnln("Stream context was done")
 			return nil
 		}
 	}
