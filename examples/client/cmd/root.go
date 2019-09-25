@@ -15,9 +15,9 @@
 package cmd
 
 import (
+	"github.com/spf13/cobra"
 	"github.com/vmware/hamlet/examples/client/cmd/start"
 	"github.com/vmware/hamlet/examples/client/cmd/version"
-	"github.com/spf13/cobra"
 )
 
 // RootCmd represents the base command to be executed when called without any

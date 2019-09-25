@@ -21,10 +21,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	log "github.com/sirupsen/logrus"
 	types "github.com/vmware/hamlet/api/types/v1alpha1"
 	"github.com/vmware/hamlet/pkg/client"
 	"github.com/vmware/hamlet/pkg/tls"
-	log "github.com/sirupsen/logrus"
 )
 
 // federatedServiceObserver observes for updates related to federated services.

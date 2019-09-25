@@ -15,8 +15,8 @@
 package start
 
 import (
-	"github.com/vmware/hamlet/examples/server/pkg/lifecycle"
 	"github.com/spf13/cobra"
+	"github.com/vmware/hamlet/examples/server/pkg/lifecycle"
 )
 
 // flagSet represents the flags available with the start subcommand.

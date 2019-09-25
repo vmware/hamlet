@@ -21,11 +21,11 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	log "github.com/sirupsen/logrus"
 	types "github.com/vmware/hamlet/api/types/v1alpha1"
 	"github.com/vmware/hamlet/pkg/server"
 	"github.com/vmware/hamlet/pkg/server/state"
 	"github.com/vmware/hamlet/pkg/tls"
-	log "github.com/sirupsen/logrus"
 )
 
 // emptyProvider is a sample state provider implementation that always returns a
@@ -43,7 +43,7 @@ func notifyResourceChanges(s server.Server) {
 	// Create a new service.
 	svc := &types.FederatedService{
 		Name: "svc",
-		Id:  "svc.foo.com",
+		Id:   "svc.foo.com",
 	}
 	if err := s.Resources().Create(svc); err != nil {
 		log.WithField("svc", svc).Errorln("Error occurred while creating service")

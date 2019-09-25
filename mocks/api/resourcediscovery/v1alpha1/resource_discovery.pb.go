@@ -5,12 +5,13 @@
 package mock_v1alpha1
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	v1alpha1 "github.com/vmware/hamlet/api/resourcediscovery/v1alpha1"
 	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	metadata "google.golang.org/grpc/metadata"
-	reflect "reflect"
 )
 
 // MockDiscoveryServiceClient is a mock of DiscoveryServiceClient interface
