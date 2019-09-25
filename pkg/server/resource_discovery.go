@@ -109,6 +109,8 @@ func (s *discoveryServiceServer) EstablishStream(stream rd.DiscoveryService_Esta
 		return err
 	}
 
+	// TODO: Improve stream resiliency.
+
 	// Watch for events and notify consumer.
 	var req *rd.StreamRequest = initReq
 	for {
