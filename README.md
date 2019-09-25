@@ -1,8 +1,9 @@
 # Hamlet
 
 Hamlet specifies a set of API standards for enabling service mesh federation.
-The API specification was realized as a collaborative effort with service mesh
-vendors viz. Google, HashiCorp, Pivotal and VMware.
+The [API specification](spec/service-discovery.md) was realized as a
+collaborative effort with service mesh vendors viz. Google, HashiCorp, Pivotal
+and VMware.
 
 The specification currently consists of the following APIs.
 
