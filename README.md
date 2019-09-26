@@ -18,6 +18,13 @@ The specification currently consists of the following APIs.
   \- API to discover, reach, authenticate, and securely communicate with
   federated services.
 
+## Extending
+
+Please see [EXTENDING.md](EXTENDING.md) if you'd like to extend this project's
+core to implement functionality for an owning or consuming federated service
+mesh. You can find concrete extension samples in the [examples](examples/)
+directory.
+
 ## Building
 
 To compile a Protobuf file into Go, you can use the following command.
