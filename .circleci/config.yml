@@ -8,6 +8,13 @@ jobs:
     working_directory: /go/src/github.com/vmware/hamlet/
     steps:
       - checkout
+      - run:
+          command: |
+            curl -O -L https://github.com/nilslice/protolock/releases/download/v0.14.1/protolock.20190917T024843Z.linux-amd64.tgz
+            tar -zxvf protolock.20190917T024843Z.linux-amd64.tgz
+            sudo mv protolock /usr/local/bin/
+            rm -rf protolock.20190917T024843Z.linux-amd64.tgz
+      - run: protolock status
       - run: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.19.1
       - run: golangci-lint run
   build:
