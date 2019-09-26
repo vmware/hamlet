@@ -1,5 +1,9 @@
 # Hamlet
 
+[![CircleCI](https://img.shields.io/circleci/project/github/vmware/hamlet/master.svg?logo=circleci)](https://circleci.com/gh/vmware/hamlet)
+[![Slack](https://img.shields.io/badge/slack-join%20chat-e01563.svg?logo=slack)](https://code.vmware.com/web/code/join)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 Hamlet specifies a set of API standards for enabling service mesh federation.
 The [API specification](spec/service-discovery.md) was realized as a
 collaborative effort with service mesh vendors viz. Google, HashiCorp, Pivotal
