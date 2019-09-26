@@ -156,6 +156,4 @@ func (s *discoveryServiceServer) EstablishStream(stream rd.DiscoveryService_Esta
 			return nil
 		}
 	}
-
-	return nil
 }

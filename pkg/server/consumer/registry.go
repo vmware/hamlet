@@ -15,7 +15,6 @@
 package consumer
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
@@ -65,7 +64,7 @@ func (r *registry) Register(id string) (Consumer, error) {
 	defer r.mutex.Unlock()
 
 	if _, found := r.consumers[id]; found {
-		return nil, errors.New(fmt.Sprintf("Consumer with id %s already exists", id))
+		return nil, fmt.Errorf("Consumer with id %s already exists", id)
 	}
 
 	r.consumers[id] = newConsumer(id, r.stateProvider)

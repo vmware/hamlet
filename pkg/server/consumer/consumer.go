@@ -15,7 +15,6 @@
 package consumer
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
@@ -95,7 +94,7 @@ func (c *consumer) InitStream(resourceUrl string) error {
 	defer c.mutex.Unlock()
 
 	if _, found := c.streams[resourceUrl]; found {
-		return errors.New(fmt.Sprintf("Consumer already subscribed to stream %s", resourceUrl))
+		return fmt.Errorf("Consumer already subscribed to stream %s", resourceUrl)
 	}
 
 	messages, err := c.stateProvider.GetState(resourceUrl)
@@ -156,7 +155,7 @@ func (c *consumer) notifyStream(resourceUrl string, wr WatchResponse) error {
 			"resourceUrl": resourceUrl,
 			"wr":          wr,
 		}).Errorln("Stream full, discarding object")
-		return errors.New(fmt.Sprintf("Discarding object due to overflow in stream %s", resourceUrl))
+		return fmt.Errorf("Discarding object due to overflow in stream %s", resourceUrl)
 	}
 	return nil
 }
@@ -177,7 +176,7 @@ func (c *consumer) WatchStream(resourceUrl string) (<-chan WatchResponse, error)
 
 	stream, found := c.streams[resourceUrl]
 	if !found {
-		return nil, errors.New(fmt.Sprintf("Consumer hasn't subscribed to stream %s", resourceUrl))
+		return nil, fmt.Errorf("Consumer hasn't subscribed to stream %s", resourceUrl)
 	}
 	return stream, nil
 }

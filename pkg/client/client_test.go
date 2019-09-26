@@ -18,13 +18,10 @@ package client
 
 import (
 	"crypto/tls"
-	"errors"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
-
-var mockErr error = errors.New("mock error")
 
 var _ = Describe("using the client API", func() {
 

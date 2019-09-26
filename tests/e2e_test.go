@@ -78,7 +78,10 @@ var _ = Describe("e2e tests", func() {
 			sr, err = server.NewServer(port, nil, &emptyProvider{})
 			Expect(err).NotTo(HaveOccurred())
 
-			go sr.Start()
+			go func() {
+				err = sr.Start()
+				Expect(err).NotTo(HaveOccurred())
+			}()
 
 			cl, err = client.NewClient(fmt.Sprintf("[::]:%d", port), nil)
 			Expect(err).NotTo(HaveOccurred())
