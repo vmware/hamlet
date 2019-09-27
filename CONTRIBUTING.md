@@ -13,7 +13,6 @@ We hope you have read our [code of conduct](CODE_OF_CONDUCT.md) before starting.
 We use GitHub Pull Requests to incorporate code changes from external
 contributors. Typical contribution flow steps are:
 
-* Sign the [CLA](https://cla.vmware.com)
 * Fork the repository
 * Clone the forked repository locally and configure the upstream repository
 * Open an Issue describing what you propose to do (unless the change is so
@@ -26,6 +25,7 @@ contributors. Typical contribution flow steps are:
 * Build and test the project locally
 * Push all commits to the topic branch in your forked repository
 * Submit a Pull Request to merge topic branch commits to upstream master
+* Sign the [CLA](https://cla.vmware.com)
 
 If this process sounds unfamiliar have a look at the excellent overview of
 [collaboration via Pull Requests on GitHub](https://help.github.com/categories/collaborating-with-issues-and-pull-requests/)
