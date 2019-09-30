@@ -132,10 +132,10 @@ consumer of federated services. In a real-world scenario there can be an
 unlimited number of federated SMs, each of them behaving as owner and/or
 consumer (dual behaviour is allowed and encouraged):
 
-* Server. A Federated Service Owner SM that owns federated services which are
-  exposed to another federated SM, which consumes them.
-* Client. A Federated Service Consumer SM that consumes federated services which
-  are exposed by another federated SM.
+* **Server:** A Federated Service Owner SM that owns federated services which
+  are exposed to another federated SM, which consumes them.
+* **Client:** A Federated Service Consumer SM that consumes federated services
+  which are exposed by another federated SM.
 
 Since a single SM can both own and consume federated services, and the
 implementers of the proposed protocol must have a server and a client endpoint
@@ -243,10 +243,10 @@ the owner catalog.
 The exact timing of the owner messages is directed by events. These are the
 possible events 
 
-* registerFederatedService when the service owner has a new federated service.
-* deregisterFederatedService when the service owner has removed a federated 
+* `registerFederatedService` when the service owner has a new federated service.
+* `deregisterFederatedService` when the service owner has removed a federated
   service.
-* updateFederatedService when the service owner has updated the fields of the
+* `updateFederatedService` when the service owner has updated the fields of the
   federated service entry.
 
 Upon receiving an update message, the consumer acknowledges after decoding,
@@ -304,7 +304,7 @@ Discovery API. In the same way, service to service communication must be mTLS.
 In future versions of the specification, HTTPS support may be provided, where
 compliant clients must support at least one of the two transport protocols. gRPC
 to JSON transcoding, including gRPC-HTTP error codes equivalencies, must follow
-the rules described in https://cloud.google.com/endpoints/docs/grpc/transcoding
+the rules described in https://cloud.google.com/endpoints/docs/grpc/transcoding.
 
 ### Authentication
 
@@ -325,18 +325,18 @@ server to a malformed request (with incomplete or wrong parameters).
 
 In the event that the Federated Service Discovery endpoint is running but
 unavailable, for instance if it is still initializing, client implementations
-will receive the gRPC status code “Unavailable”. Clients receiving this code or
+will receive the gRPC status code `Unavailable`. Clients receiving this code or
 clients which are unable to reach the Federated Service Discovery API endpoint
-can retry with an exponential backoff with a minimum delay of 1s.
+can retry with an exponential backoff with a minimum delay of 1 second.
 
 Clients that are not authenticated will receive the gRPC status code
-“Unauthenticated”. Clients encountering the "Unauthenticated" status code must
+`Unauthenticated`. Clients encountering the `Unauthenticated` status code must
 not retry, as this indicates that the meshes as possibly not federated, and it
 is a non-recoverable error.
 
 Client implementations which do not send at least the required mandatory
 arguments for the messages, or which send malformed or incorrect arguments will
-receive the gRPC status code “InvalidArgument”.
+receive the gRPC status code `InvalidArgument`.
 
 A summary of error conditions and codes can be found in Appendix B.
 
@@ -359,17 +359,17 @@ registering, both client and server must have been authenticated and a secure
 TLS channel created.
 
 **Request message format** <br>
-registerConsumer does not provide a request payload.
+`registerConsumer` does not provide a request payload.
 
 **Response stream message format** <br>
-registerConsumer does not provide a response payload.
+`registerConsumer` does not provide a response payload.
 
 **Errors**
 
 | Code | Condition | Client behavior |
 | --- | --- | --- |
-| Unavailable | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
-| InvalidArgument | Request data doesn’t contain all the required mandatory fields. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
+| `Unavailable` | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
+| `InvalidArgument` | Request data doesn’t contain all the required mandatory fields. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
 
 ### deregisterConsumer
 
@@ -377,17 +377,17 @@ Deregisters a federated SM consumer from a federated SM owner. The consumer must
 remove the federated services from its local registry. 
 
 **Request message format** <br>
-deregisterConsumer does not provide a request payload.
+`deregisterConsumer` does not provide a request payload.
 
 **Response stream message format** <br>
-deregisterConsumer does not provide a response payload.
+`deregisterConsumer` does not provide a response payload.
 
 **Errors**
 
 | Code | Condition | Client behavior |
 | --- | --- | --- |
-| Unavailable | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
-| InvalidArgument | Request data doesn’t contain all the required mandatory fields or consumer hasn’t be registered. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
+| `Unavailable` | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
+| `InvalidArgument` | Request data doesn’t contain all the required mandatory fields or consumer hasn’t be registered. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
 
 ### createFederatedService
 
@@ -395,8 +395,8 @@ Adds a federated service in the federated SM consumer. Then, it can be
 discovered by the federated SM as if it were local, and the object be
 manipulated with the corresponding methods. 
 
-It is worth noting that a FederatedService maps to a single SNI. There's no set
-format for the value of this field in the context of federated service
+It is worth noting that a `FederatedService` maps to a single SNI. There's no
+set format for the value of this field in the context of federated service
 discovery. As long as the value is acceptable for DNS querying, and the
 federated service mesh owner is able to facilitate communication with the
 federated service given the value to its service mesh ingress, the owner is free
@@ -406,27 +406,27 @@ to choose the format it prefers.
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| Name | string | No | Human readable name for the service |
-| FQDN | string | Yes | FQDN the federated service exposes outside of the owner mesh |
-| ServiceID | string | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
-| SAN | string | Yes | URI SAN of the Federated Service to enable end to end security, in SPIFFE format |
-| MeshIngress | Array\<Endpoint\> | Yes | The endpoints of the ingress of the mesh where the service endpoints can be reached |
-| Protocols | Array\<string\> | Yes | Protocols associated with the service endpoint |
-| Description | string | No | Description of the service |
-| Tags | Array\<string\> | No | Informative values for filtering purposes |
-| Meta/Labels | Map\<string, string\> | No | Informative array of KV for filtering purposes |
+| `Name` | `string` | No | Human readable name for the service |
+| `FQDN` | `string` | Yes | FQDN the federated service exposes outside of the owner mesh |
+| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
+| `SAN` | `string` | Yes | URI SAN of the Federated Service to enable end to end security, in SPIFFE format |
+| `MeshIngress` | `Array<Endpoint>` | Yes | The endpoints of the ingress of the mesh where the service endpoints can be reached |
+| `Protocols` | `Array<string>` | Yes | Protocols associated with the service endpoint |
+| `Description` | `string` | No | Description of the service |
+| `Tags` | `Array<string>` | No | Informative values for filtering purposes |
+| `Labels` | `Map<string, string>` | No | Informative array of KV for filtering purposes |
 
 **Response stream message format**
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| ServiceID | string | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM. |
+| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM. |
 
 **Errors**
 
 | Code | Condition | Client behavior |
 | --- | --- | --- |
-| Unavailable | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
+| `Unavailable` | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
 
 **Request message payload example**
 
@@ -457,20 +457,20 @@ Removes a federated service in the federated SM consumer.
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| ServiceID | string | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
+| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
 
 **Response stream message format**
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| ServiceID | string | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
+| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
 
 **Errors**
 
 | Code | Condition | Client behavior |
 | --- | --- | --- |
-| Unavailable | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
-| InvalidArgument | Request data doesn’t contain all the required mandatory fields. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
+| `Unavailable` | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
+| `InvalidArgument` | Request data doesn’t contain all the required mandatory fields. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
 
 **Request message payload example**
 
@@ -483,36 +483,36 @@ Removes a federated service in the federated SM consumer.
 ### updateFederatedService
 
 Modifies any number of the fields of a federated service in the federated SM
-consumer except ServiceID (as if they changed, it would be then a different
-service). If ServiceID needs to be changed, the suggested approach would be to
+consumer except `ServiceID` (as if they changed, it would be then a different
+service). If `ServiceID` needs to be changed, the suggested approach would be to
 remove the entry and create a new one.
 
 **Request message parameters**
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| Name | string | Yes | Human readable name for the service |
-| FQDN | string | Yes | FQDN the federated service exposes outside of the owner mesh |
-| ServiceID | string | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
-| SAN | string | Yes | URI SAN of the Federated Service to enable end to end security, in SPIFFE format |
-| MeshIngress | Array\<Endpoint\> | Yes | The endpoints of the ingress of the mesh where the service endpoints can be reached |
-| Protocols | Array\<string\> | Yes | Protocols associated with the service endpoint |
-| Description | string | Yes | Description of the service |
-| Tags | Array\<string\> | Yes | Informative values for filtering purposes |
-| Meta/Labels | Map\<string, string\> | Yes | Informative array of KV for filtering purposes |
+| `Name` | `string` | Yes | Human readable name for the service |
+| `FQDN` | `string` | Yes | FQDN the federated service exposes outside of the owner mesh |
+| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
+| `SAN` | `string` | Yes | URI SAN of the Federated Service to enable end to end security, in SPIFFE format |
+| `MeshIngress` | `Array<Endpoint>` | Yes | The endpoints of the ingress of the mesh where the service endpoints can be reached |
+| `Protocols` | `Array<string>` | Yes | Protocols associated with the service endpoint |
+| `Description` | `string` | Yes | Description of the service |
+| `Tags` | `Array<string>` | Yes | Informative values for filtering purposes |
+| `Labels` | `Map<string, string>` | Yes | Informative array of KV for filtering purposes |
 
 **Response stream message format**
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| ServiceID | string | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
+| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
 
 **Errors**
 
 | Code | Condition | Client behavior |
 | --- | --- | --- |
-| Unavailable | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
-| InvalidArgument | Request data doesn’t contain all the required mandatory fields. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
+| `Unavailable` | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
+| `InvalidArgument` | Request data doesn’t contain all the required mandatory fields. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
 
 **Request message payload example**
 
@@ -547,13 +547,13 @@ or a set of services.
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| Address | string | Yes | This is the address associated with the network endpoint. Valid values are host IP addresses and FQDN. |
-| Port | int | Yes | Port associated with the network endpoint. |
+| `Address` | `string` | Yes | This is the address associated with the network endpoint. Valid values are host IP addresses and FQDN. |
+| `Port` | `int` | Yes | Port associated with the network endpoint. |
 
 ## Appendix A. Sample State Machine Implementation of registerFederatedService
 
 These state diagrams show a sample implementation of the
-registerFederatedService method of the Federated Service Discovery API. The
+`registerFederatedService` method of the Federated Service Discovery API. The
 client of the service owner initiates the connection to the server of the
 service consumer. It is assumed that the Federated Service Discovery API
 endpoints have already been mutually authenticated.
@@ -567,13 +567,13 @@ endpoints have already been mutually authenticated.
 
 1. The Federated Service Discovery API endpoint is starting.
 2. The gRPC server has started and is now accepting connections.
-3. An incoming registerConsumer or deregisterConsumer request is being
+3. An incoming `registerConsumer` or `deregisterConsumer` request is being
    validated. This includes checking that the client has been authenticated, and
    that all required fields are provided and match the expected format.
-4. The server is sending to the client a registerFederatedService or a
-   deregisterFederatedService message.
+4. The server is sending to the client a `registerFederatedService` or a
+   `deregisterFederatedService` message.
 5. The server is in waiting state. Transitioning out of the waiting state
-   requires a cancellation (for example, because deregisterConsumer has been
+   requires a cancellation (for example, because `deregisterConsumer` has been
    called) or an update because the server has a catalog update to share with
    the client. In the latter case, the update is sent.
 6. The server is closing the stream and provides the client with an error code
@@ -592,14 +592,22 @@ Consumer (client)")
 *Figure 5. Example implementation of the Service Consumer (client)*
 
 1. The client is dialing the Federated Service Discovery API server endpoint.
-2. The client is calling registerConsumer or deregisterConsumer.
-3. The client is receiving data from the server stream, as a response to the possible calls to the server.
-4. The client is validating and updating the local service catalog if the server has sent a registerFederatedService, deregisterFederatedService message, or answered a registerConsumer, or removing data from the local catalog if the server has answered a deregisterConsumer message sent from the client.
-5. The client is in waiting state. Transitioning out of the waiting state requires a cancellation (for example, because deregisterConsumer has been called) or an update because the server has a catalog update to share with the client. 
+2. The client is calling `registerConsumer` or `deregisterConsumer`.
+3. The client is receiving data from the server stream, as a response to the
+   possible calls to the server.
+4. The client is validating and updating the local service catalog if the server
+   has sent a `registerFederatedService`, `deregisterFederatedService` message,
+   or answered a `registerConsumer`, or removing data from the local catalog if
+   the server has answered a `deregisterConsumer` message sent from the client.
+5. The client is in waiting state. Transitioning out of the waiting state
+   requires a cancellation (for example, because `deregisterConsumer` has been
+   called) or an update because the server has a catalog update to share with
+   the client.
 6. The client is performing an exponential backoff.
 7. The client has encountered a fatal condition and must stop.
 8. The client is performing an exponential backoff.
-9. The client has encountered a fatal condition and must stop. This can occur if there are data transmission errors.
+9. The client has encountered a fatal condition and must stop. This can occur if
+   there are data transmission errors.
 
 ## Appendix B. List of Error Codes and Conditions
 
@@ -611,5 +619,5 @@ for more information about these codes.
 
 | Code | Condition | Client behavior |
 | --- | --- | --- |
-| Unavailable | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
-| InvalidArgument | Request data doesn’t contain all the required mandatory fields. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
+| `Unavailable` | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
+| `InvalidArgument` | Request data doesn’t contain all the required mandatory fields. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
