@@ -1,29 +1,12 @@
 # Service Discovery API
 
-**Status:** DRAFT
-
-**Last Updated:** 2019-09-04
-
-**Authors (in alpha order):** <br>
-Deepa Kalani (VMware) <br>
-Sergio Pozo (VMware) <br>
-Sushil Singh (VMware) <br>
-
-**Collaborators (in alpha order):** <br>
-Gabriel Rosenhouse (Pivotal) <br>
-Louis Ryan (Google) <br>
-Luke Kysow (HashiCorp) <br>
-Nathan Mittler (Google) <br>
-Paul Banks (HashiCorp) <br>
-Shannon Coen (Pivotal) <br>
-Venil Noronha (VMware) <br>
-
 ## Status of this Memo
 
 This document specifies an experimental Service Discovery API standard for the
 internet community, and requests, discussions, and suggestions for improvements.
-It is a living document that will evolve over the coming weeks and is being
-shepherded by VMware.
+Distribution of this document is unlimited.
+
+An original version of this document is preserved [here](https://docs.google.com/document/d/1CVaKfvY_myM1-PNOl-cPXWDN_eVyAuPMSkTmSc-n9p4) for historical record.
 
 ## Table of Contents
 
