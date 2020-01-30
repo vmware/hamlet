@@ -39,13 +39,13 @@ or multi-cluster, and can provide the same or different functionality to its
 customers.
 
 In this document, we present a new service mesh interoperation OSS initiative to
-discover, reach, and securely communicatie services across meshes in different
+discover, reach, and securely communicate services across meshes in different
 administrative domains.
 
 ## Service Mesh Federation
 
 For the purposes of this document, a Service Mesh (SM from now on) Federation
-comprises the problems of 
+is comprised the problems of:
 
 * Identity federation
 * Service discovery federation
@@ -56,7 +56,7 @@ comprises the problems of
 across multiple SM or peers. How each SM builds the infrastructure where the
 services will run must be irrelevant to the SM Federation.
 
-A SM Federation comprises the following features and constraints
+A SM Federation comprises the following features and constraints:
 
 1. Several SM administrative domains, one for each member of the federation.
 2. Each SM of the federation can and will continue operating as a standalone SM,

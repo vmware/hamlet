@@ -17,10 +17,12 @@ $ make certs
 $ make start-server
 ```
 
-3\. Start the client.
+3\. Open another terminal session/window.
+
+4\. Start the client.
 
 ```console
 $ make start-client
 ```
 
-4\. Hit ^c (ctrl + c) to terminate the server/client.
+5\. Hit ^c (ctrl + c) to terminate the server/client.
