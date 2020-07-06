@@ -12,8 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// TODO: Add tests for the tls package.
-
 // prepareCertPool prepares a TLS cert pool given a slice of CA certificates.
 func prepareCertPool(caCerts ...string) *x509.CertPool {
 	certPool := x509.NewCertPool()
