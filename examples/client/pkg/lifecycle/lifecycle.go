@@ -38,7 +38,7 @@ func (o *federatedServiceObserver) OnDelete(fs *types.FederatedService) error {
 
 // Start starts the client lifecycle.
 func Start(rootCACert string, peerCert string, peerKey string, serverAddr string, insecureSkipVerify bool) {
-	// Prepare the client instance.
+	// Prepare the client instance. Alternative functions for tls.Config exist in the ./pkg/tls/tls.go
 	tlsConfig := tls.PrepareClientConfig(rootCACert, peerCert, peerKey, insecureSkipVerify)
 	cl, err := client.NewClient(serverAddr, tlsConfig)
 	if err != nil {
