@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -45,8 +46,43 @@ func prepareCommonConfig(peerCert string, peerKey string) *tls.Config {
 	return config
 }
 
-// PrepareServerConfig prepares a TLS config instance for a server that wants
-// mTLS enabled.
+// prepareServerConfigWithPeriodicReload prepares a server TLS config instance that periodically
+// reloads the certificates from disk
+func prepareServerConfigWithPeriodicReload(peerCert string, peerKey string, syncPeriod time.Duration) *tls.Config {
+	certLoader, err := NewPeriodicCertLoader(peerCert, peerKey, syncPeriod)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err,
+		}).Fatalln("Error starting TLS certificate reloader")
+	}
+	go certLoader.Start()
+
+	config := &tls.Config{}
+	config.GetCertificate = func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+		return certLoader.Current(), nil
+	}
+	return config
+}
+
+// prepareClientConfigWithPeriodicReload prepares a client TLS config instance that periodically
+// reloads the certificates from disk
+func prepareClientConfigWithPeriodicReload(peerCert string, peerKey string, syncPeriod time.Duration) *tls.Config {
+	certLoader, err := NewPeriodicCertLoader(peerCert, peerKey, syncPeriod)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err,
+		}).Fatalln("Error starting TLS certificate reloader")
+	}
+	go certLoader.Start()
+
+	config := &tls.Config{}
+	config.GetClientCertificate = func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+		return certLoader.Current(), nil
+	}
+	return config
+}
+
+// PrepareServerConfig prepares a TLS config instance for a server that wants mTLS enabled.
 func PrepareServerConfig(rootCACerts []string, peerCert string, peerKey string) *tls.Config {
 	config := prepareCommonConfig(peerCert, peerKey)
 	config.ClientCAs = prepareCertPool(rootCACerts...)
@@ -54,10 +90,27 @@ func PrepareServerConfig(rootCACerts []string, peerCert string, peerKey string) 
 	return config
 }
 
-// PrepareClientConfig prepares a TLS config instance for a client that wants
-// mTLS enabled.
+// PrepareServerConfigPeriodicWithReload prepares a TLS config instance for a server that wants mTLS enabled
+// and dynamic reloading of server certificates.
+func PrepareServerConfigWithPeriodicReload(rootCACerts []string, peerCert string, peerKey string, syncPeriod time.Duration) *tls.Config {
+	config := prepareServerConfigWithPeriodicReload(peerCert, peerKey, syncPeriod)
+	config.ClientCAs = prepareCertPool(rootCACerts...)
+	config.ClientAuth = tls.RequireAndVerifyClientCert
+	return config
+}
+
+// PrepareClientConfig prepares a TLS config instance for a client that wants mTLS enabled.
 func PrepareClientConfig(rootCACert string, peerCert string, peerKey string, insecureSkipVerify bool) *tls.Config {
 	config := prepareCommonConfig(peerCert, peerKey)
+	config.RootCAs = prepareCertPool(rootCACert)
+	config.InsecureSkipVerify = insecureSkipVerify
+	return config
+}
+
+// PrepareClientConfigWithPeriodicReload prepares a TLS config instance for a client that wants mTLS enabled
+// and dynamic reloading of client certificates.
+func PrepareClientConfigWithPeriodicReload(rootCACert string, peerCert string, peerKey string, insecureSkipVerify bool, syncPeriod time.Duration) *tls.Config {
+	config := prepareClientConfigWithPeriodicReload(peerCert, peerKey, syncPeriod)
 	config.RootCAs = prepareCertPool(rootCACert)
 	config.InsecureSkipVerify = insecureSkipVerify
 	return config
