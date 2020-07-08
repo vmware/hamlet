@@ -1,0 +1,102 @@
+// Copyright 2019 VMware, Inc. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package federation.types.v1alpha2;
+
+option go_package = "types/v1alpha2";
+
+// FederatedService represents a federated service which can be discovered by
+// a federated service mesh consumer.
+message FederatedService {
+  // REQUIRED. A human readable name for the federated service.
+  string name = 1;
+
+  // The description of the federated service.
+  string description = 2;
+
+  // Informative values for filtering purposes.
+  repeated string tags = 3;
+
+  // Informative KV pairs for filtering purposes.
+  map<string, string> labels = 4;
+
+  // REQUIRED. The FQDN (Fully Qualified Domain Name) uniquely identifies the
+  // federated service. The FQDN is used by consumer platforms as a DNS name to
+  // access the imported FederatedService. The consumer platform DNS can be
+  // programmed to reference the Ingress of the imported FederatedService. 
+  string fqdn = 5;
+
+  // REQUIRED. The unique name that identifies the service within a federated
+  // service mesh owner. The value of this field will be set as the SNI header
+  // by the federated service mesh consumer. Each vendor may possibly have its
+  // own SNI format, so this specification doesn't define a particular format
+  // to use for this field.
+  //
+  // Following are some sample values for this field.
+  // Example: foo.acme.com
+  // Example: outbound_.8080_.v1_.foo.acme.com
+  // Example: foo.acme.64a95d14-92f8-11e9-bc42-526af7764f64.com
+  string id = 6;
+
+  // DEPRECATED. Usage of sans is recommended.
+  //
+  // The SAN (Subject Alternative Name) to enable end-to-end security for the
+  // federated service.
+  string san = 7;
+
+  // REQUIRED. A list of SANs (Subject Alternative Names) to enable end-to-end
+  // security for the federated service.
+  string sans = 10;
+
+  // REQUIRED. The protocols supported by the federated service.
+  repeated string protocols = 8;
+
+  // Endpoint represents a service mesh ingress endpoint that provides access to
+  // a federated service over mTLS (mutual TLS).
+  message Endpoint {
+    // REQUIRED. The service mesh ingress endpoint address (i.e. IP, CIDR, or a
+    // domain name).
+    string address = 1;
+
+    // REQUIRED. The port exposed by the service mesh ingress endpoint.
+    uint32 port = 2;
+
+    // REQUIRED. The endpoint labels decouple IP from routing information. The
+    // endpoint_selector field in Instance matches with at least one endpoint
+    // label here.
+    repeated string labels = 3;
+  }
+
+  // REQUIRED. The service mesh ingress endpoints that provide access to the
+  // federated service.
+  repeated Endpoint endpoints = 9;
+
+  // Instance represents an instance of the federated service.
+  message Instance {
+    // REQUIRED. The unique identifier for the federated service instance within
+    // the group of instances for a FederatedService.
+    string id = 1;
+
+    // REQUIRED. The protocol corresponding to the federated service instance.
+    //
+    // E.g. In the case where protocol is TLS, the connection will be routed
+    // based on the SNI header to the destination.
+    string protocol = 2;
+
+    // Additional metadata for the purpose of establishing connectivity.
+    //
+    // E.g. In the case where protocol is TLS, the connection will be routed
+    // based on the SNI header to the destination. The SNI header can be made
+    // available in the metadata using a key named 'sni'.
+    map<string, string> metadata = 3;
+
+    // REQUIRED. A list of endpoint labels to match over Endpoint instances in a
+    // FederatedService. At least one matching label must be provided.
+    repeated string endpoint_selector = 4;
+  }
+
+  // REQUIRED. The service instances corresponding to the federated service.
+  repeated Instance instances = 11;
+}
