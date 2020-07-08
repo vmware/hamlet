@@ -10,7 +10,8 @@ option go_package = "types/v1alpha2";
 // FederatedService represents a federated service which can be discovered by
 // a federated service mesh consumer.
 message FederatedService {
-  // REQUIRED. A human readable name for the federated service.
+  // REQUIRED. The unique name that identifies the service within a federated
+  // service mesh owner.
   string name = 1;
 
   // The description of the federated service.
@@ -28,30 +29,14 @@ message FederatedService {
   // programmed to reference the Ingress of the imported FederatedService. 
   string fqdn = 5;
 
-  // REQUIRED. The unique name that identifies the service within a federated
-  // service mesh owner. The value of this field will be set as the SNI header
-  // by the federated service mesh consumer. Each vendor may possibly have its
-  // own SNI format, so this specification doesn't define a particular format
-  // to use for this field.
-  //
-  // Following are some sample values for this field.
-  // Example: foo.acme.com
-  // Example: outbound_.8080_.v1_.foo.acme.com
-  // Example: foo.acme.64a95d14-92f8-11e9-bc42-526af7764f64.com
-  string id = 6;
+  reserved 6;
+  reserved 'id';
 
-  // DEPRECATED. Usage of sans is recommended.
-  //
-  // The SAN (Subject Alternative Name) to enable end-to-end security for the
-  // federated service.
-  string san = 7;
+  reserved 7;
+  reserved 'san';
 
-  // REQUIRED. A list of SANs (Subject Alternative Names) to enable end-to-end
-  // security for the federated service.
-  string sans = 10;
-
-  // REQUIRED. The protocols supported by the federated service.
-  repeated string protocols = 8;
+  reserved 8;
+  reserved 'protocols';
 
   // Endpoint represents a service mesh ingress endpoint that provides access to
   // a federated service over mTLS (mutual TLS).
@@ -72,6 +57,10 @@ message FederatedService {
   // REQUIRED. The service mesh ingress endpoints that provide access to the
   // federated service.
   repeated Endpoint endpoints = 9;
+
+  // REQUIRED. A list of SANs (Subject Alternative Names) to enable end-to-end
+  // security for the federated service.
+  repeated string sans = 10;
 
   // Instance represents an instance of the federated service.
   message Instance {
