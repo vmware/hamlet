@@ -14,7 +14,7 @@ The specification currently consists of the following APIs.
 * [Federated Resource Discovery API](api/resourcediscovery/v1alpha1/resource_discovery.proto)
   \- API to authenticate and securely distribute resources between federated
   service meshes.
-* [Federated Service Discovery API](api/types/v1alpha1/federated_service.proto)
+* [Federated Service Discovery API](api/types/v1alpha2/federated_service.proto)
   \- API to discover, reach, authenticate, and securely communicate with
   federated services.
 
@@ -30,7 +30,7 @@ directory.
 To compile a Protobuf file into Go, you can use the following command.
 
 ```console
-$ protoc -I api/types/v1alpha1/ federated_service.proto --go_out=api/
+$ protoc -I api/types/v1alpha2/ federated_service.proto --go_out=api/
 ```
 
 To download the external dependencies, use the following commands.
