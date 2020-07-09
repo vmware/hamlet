@@ -67,7 +67,7 @@ func notifyResourceChanges(s server.Server) {
 
 // Start starts the server lifecycle.
 func Start(rootCACerts []string, peerCert string, peerKey string, port uint32) {
-	// Initialize the server.
+	// Initialize the server. Alternative functions for tls.Config exist in the ./pkg/tls/tls.go
 	tlsConfig := tls.PrepareServerConfig(rootCACerts, peerCert, peerKey)
 	s, err := server.NewServer(port, tlsConfig, &emptyProvider{})
 	if err != nil {
