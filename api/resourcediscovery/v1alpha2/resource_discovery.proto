@@ -84,7 +84,7 @@ message StreamResponse {
   // REQUIRED. The operation to be performed in relation to the resource.
   Operation operation = 4;
 }
-message BiDirectionalStream {
+message BidirectionalStream {
   StreamRequest request = 1;
   StreamResponse response = 2 ;
 }
@@ -95,5 +95,5 @@ service DiscoveryService {
   // Establish a new stream with a federated service mesh owner. The federated
   // service mesh owner can then send StreamResponse messages, and the federated
   // service mesh consumer can ACK/NACK these via new StreamRequest messages.
-  rpc EstablishStream (stream BiDirectionalStream) returns (stream BiDirectionalStream);
+  rpc EstablishStream (stream BidirectionalStream) returns (stream BidirectionalStream);
 }
