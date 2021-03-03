@@ -1,4 +1,4 @@
-// Copyright 2019 VMware, Inc. All Rights Reserved.
+// Copyright 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 syntax = "proto3";
@@ -7,11 +7,13 @@ package federation.types.v1alpha2;
 
 option go_package = "types/v1alpha2";
 
-// FederatedService represents a federated service which can be discovered by
-// a federated service mesh consumer.
+// FederatedService represents a remote service (in an owner platform) which
+// can be discovered by a local consumer platform.
 message FederatedService {
-  // REQUIRED. The unique name that identifies the service within a federated
-  // service mesh owner.
+  // REQUIRED. The unique name that identifies the service within an owner platform,
+  // and serves as its unique ID. Uniqueness in the service owner platform. The consumer
+  // platform must take into account possible name collistions that may happen with other
+  // FederatedService consumed from other owner platforms through, for example, aliasing.
   string name = 1;
 
   // The description of the federated service.
@@ -23,10 +25,12 @@ message FederatedService {
   // Informative KV pairs for filtering purposes.
   map<string, string> labels = 4;
 
-  // REQUIRED. The FQDN (Fully Qualified Domain Name) uniquely identifies the
-  // federated service. The FQDN is used by consumer platforms as a DNS name to
-  // access the imported FederatedService. The consumer platform DNS can be
-  // programmed to reference the Ingress of the imported FederatedService. 
+  // REQUIRED. The FQDN (Fully Qualified Domain Name) the consumer platform uses as a
+  // local DNS name to access the imported FederatedService. The consumer platform DNS
+  // can be programmed to reference the Endpoint of the imported FederatedService.
+  // It is unique within the service owner platform. The consumer
+  // platform must take into account possible name collistions that may happen with other
+  // FederatedService consumed from other owner platforms through, for example, aliasing.
   string fqdn = 5;
 
   reserved 6;
@@ -38,14 +42,16 @@ message FederatedService {
   reserved 8;
   reserved 'protocols';
 
-  // Endpoint represents a service mesh ingress endpoint that provides access to
-  // a federated service over mTLS (mutual TLS).
+  // Endpoint represents the endpoint that provides access to
+  // a federated service in the service owner platform. For example, this can
+  // be an ingress.
   message Endpoint {
-    // REQUIRED. The service mesh ingress endpoint address (i.e. IP, CIDR, or a
-    // domain name).
+    // REQUIRED. The service owner endpoint address (i.e. IP, CIDR, or a FQDN)
+    // for this FederatedService.
     string address = 1;
 
-    // REQUIRED. The port exposed by the service mesh ingress endpoint.
+    // REQUIRED. The port where this FederatedService is exposed by the service
+    // owner endpoint.
     uint32 port = 2;
 
     // REQUIRED. The endpoint labels decouple IP from routing information. The
@@ -54,8 +60,9 @@ message FederatedService {
     repeated string labels = 3;
   }
 
-  // REQUIRED. The service mesh ingress endpoints that provide access to the
-  // federated service.
+  // REQUIRED. Endpoint represents the endpoint that provides access to
+  // a federated service in the service owner platform. For example, this can
+  // be an ingress.
   repeated Endpoint endpoints = 9;
 
   // REQUIRED. A list of SANs (Subject Alternative Names) to enable end-to-end
