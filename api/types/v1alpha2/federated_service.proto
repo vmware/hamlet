@@ -29,7 +29,7 @@ message FederatedService {
   // local DNS name to access the imported FederatedService. The consumer platform DNS
   // can be programmed to reference the Endpoint of the imported FederatedService.
   // It is unique within the service owner platform. The consumer
-  // platform must take into account possible name collistions that may happen with other
+  // platform must solve any possible naming collistions that may happen with other
   // FederatedService consumed from other owner platforms through, for example, aliasing.
   string fqdn = 5;
 
@@ -42,22 +42,25 @@ message FederatedService {
   reserved 8;
   reserved 'protocols';
 
-  // Endpoint represents the endpoint that provides access to
-  // a federated service in the service owner platform. For example, this can
-  // be an ingress.
+  // Endpoint represents the endpoint that provides access to a federated 
+  // service in the service owner platform. For example, this can be an
+  // ingress.
   message Endpoint {
-    // REQUIRED. The service owner endpoint address (i.e. IP, CIDR, or a FQDN)
-    // for this FederatedService.
+    // REQUIRED. External address associated with the network endpoint where
+    // the service is available. Valid values are host IP addresses and FQDN.
     string address = 1;
 
-    // REQUIRED. The port where this FederatedService is exposed by the service
-    // owner endpoint.
+    // REQUIRED. External port associated with the network endpoint where
+    // the service is available.
     uint32 port = 2;
 
-    // REQUIRED. The endpoint labels decouple IP from routing information. The
-    // endpoint_selector field in Instance matches with at least one endpoint
-    // label here.
+    // REQUIRED. The endpoint labels are used to associate each Instance to
+    // one or more Endpoint. If there are no matches, the Instance is
+    // associated to all Endpoint.
     repeated string labels = 3;
+    
+    // The description of the Endpoint.
+    string description = 4;
   }
 
   // REQUIRED. Endpoint represents the endpoint that provides access to
@@ -76,21 +79,32 @@ message FederatedService {
     string id = 1;
 
     // REQUIRED. The protocol corresponding to the federated service instance.
+    // MUST BE one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS|MTLS
     //
     // E.g. In the case where protocol is TLS, the connection will be routed
-    // based on the SNI header to the destination.
+    // based on the SNI header to the destination. In the case of HTTP, the
+    // connection may use host-based routing, and in the case of TCP it may
+    // just just use ip/port.
     string protocol = 2;
 
     // Additional metadata for the purpose of establishing connectivity.
+    // RESERVED KEYS are SNI|HOSTNAME|PORT
     //
     // E.g. In the case where protocol is TLS, the connection will be routed
     // based on the SNI header to the destination. The SNI header can be made
-    // available in the metadata using a key named 'sni'.
+    // available in the metadata using a key named 'sni'. Likewise, if the
+    // protocol is HTTP, the hostname and port can be made available as metadata.
+    //
+    // Please take a look at the spec documentation for more information.
     map<string, string> metadata = 3;
 
-    // REQUIRED. A list of endpoint labels to match over Endpoint instances in a
-    // FederatedService. At least one matching label must be provided.
+    // REQUIRED. A list of endpoint labels to match over Endpoint. At least one
+    // matching label must be provided. If there are no matches, the Endpoint is
+    // associated to all Instance.
     repeated string endpoint_selector = 4;
+    
+    // The description of the Instance.
+    string description = 5;
   }
 
   // REQUIRED. The service instances corresponding to the federated service.
