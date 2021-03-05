@@ -545,7 +545,7 @@ An `Endpoint` represents the location of a service that provides access to a fed
 | `Address` | `string` | Yes | This is the address associated with the network endpoint. Valid values are host IP addresses and FQDN. |
 | `Port` | `int` | Yes | Port associated with the network endpoint where the federated service is available . |
 | `Labels` | `Array<string>` | Yes | The endpoint labels are used to associate each `Instance` to one or more `Endpoint`. If there are no matches, the `Instance` is associated to all `Endpoint`. |
-| `Description` | `string` | No | Description of the Endpoint. |
+| `Description` | `string` | No | Description of the `Endpoint`. |
 
 ## Appendix A. Sample State Machine Implementation of registerFederatedService
 
