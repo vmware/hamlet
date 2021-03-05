@@ -400,7 +400,7 @@ FederatedService {
     Labels: { "version": "3.6" }
 }
 
-DBInstance {
+Instance {
     Name: “example-service-dbinstance1”
     Protocol: “https"
     Metadata: { "SNI": "outbound_.8080_.v1_.db.mysql.com" }
