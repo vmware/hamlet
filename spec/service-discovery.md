@@ -357,7 +357,7 @@ TLS channel created.
 Adds a federated service to the consumer platform Then, the federated service can be
 discovered by the consumer platform as a local service. A `FederatedService` is uniquely idenfied in the owner platform by its `name`. 
 
-A `FederatedService` is composed of multiple instances. In this way, we are creating a hierarchy in a way that a FederatedService can contain multiple backing services under the same FQDN. For flexibility, each `Instance` can be exposed in a different `Endpoint`, or on the same one, using a labeling system in both `Instance` and `Endpoint`. If there is no matching selector for an `Instance`, then consumer agent implementors must associate to that `Instance` all endpoints.
+A `FederatedService` is composed of multiple instances. In this way, we are creating a hierarchy in a way that a `FederatedService` can contain multiple backing services under the same FQDN. For flexibility, each `Instance` can be exposed in a different `Endpoint`, or on the same one, using a labeling system in both `Instance` and `Endpoint`. If there is no matching selector for an `Instance`, then consumer agent implementors must associate to that `Instance` all endpoints.
 
 For each `FedeatedService`, the consumer agent must create in the consumer platform an entry in the local service registry (for example, in the local DNS) with an FQDN for each of the `Instance` with the format `FederatedServiceInstance.spec.instanceID+FederatedService.spec.fqdn`. In addition, the consumer agent must create in the local service registry an entry with `FederatedService.spec.fqdn` and all the information in each `Instance` and corresponding `Endpoint`.
 
