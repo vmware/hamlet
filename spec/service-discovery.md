@@ -226,11 +226,9 @@ the owner catalog.
 The exact timing of the owner messages is directed by events. These are the
 possible events 
 
-* `registerFederatedService` when the service owner has a new federated service.
-* `deregisterFederatedService` when the service owner has removed a federated
-  service.
-* `updateFederatedService` when the service owner has updated the fields of the
-  federated service entry.
+* `CREATE` when the service owner has a new federated service.
+* `DELETE` when the service owner has removed a federated service.
+* `UPDATE` when the service owner has updated an existing federated service.
 
 Upon receiving an update message, the consumer acknowledges after decoding,
 validating, and persisting the update to its local service registry.
@@ -326,19 +324,19 @@ A summary of error conditions and codes can be found in Appendix B.
 ## Federated Service Discovery API Endpoint Specification
 
 A federated service describes the properties that a service owner needs to
-expose to a federated SM (consumer) in order for it to be able to discover,
+expose to a federated consumer platform in order for it to be able to discover,
 reach, authenticate, and securely communicate. A federated service adds
-additional entries into the consumer SM internal service registry, so that
-auto-discovered services in the consumer SM can access/route to these federated
-services.
+additional entries into the consumer platform internal service registry, so that
+federated services can be auto-discovered in the consumer platform (as if they
+were local) and traffic routed to it.
 
-The federated service owner (server) will implement the following APIs.
+The federated owner platform (server) will implement the following APIs.
 
 ### registerConsumer
 
-Registers a federated SM (consumer) in a federated SM (owner), opens a server
+Registers a federated consumer platform in a federated owner platform. The owner opens a server
 stream and sends the full federated service catalog to the client. Before
-registering, both client and server must have been authenticated and a secure
+registering, both client and server must have been authenticated to each other and a secure
 TLS channel created.
 
 **Request message format** <br>
@@ -354,56 +352,33 @@ TLS channel created.
 | `Unavailable` | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
 | `InvalidArgument` | Request data doesn’t contain all the required mandatory fields. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
 
-### deregisterConsumer
+### CREATE
 
-Deregisters a federated SM consumer from a federated SM owner. The consumer must
-remove the federated services from its local registry. 
+Adds a federated service to the consumer platform Then, the federated service can be
+discovered by the consumer platform as a local service. A `FederatedService` is uniquely idenfied in the owner platform by its `name`. 
 
-**Request message format** <br>
-`deregisterConsumer` does not provide a request payload.
+A `FederatedService` is composed of multiple instances. In this way, we are creating a hierarchy in a way that a FederatedService can contain multiple backing services under the same FQDN. For flexibility, each `Instance` can be exposed in a different `Endpoint`, or on the same one, using a labeling system in both `Instance` and `Endpoint`. If there is no matching selector for an `Instance`, then consumer agent implementors must associate to that `Instance` all endpoints.
 
-**Response stream message format** <br>
-`deregisterConsumer` does not provide a response payload.
-
-**Errors**
-
-| Code | Condition | Client behavior |
-| --- | --- | --- |
-| `Unavailable` | The Federated Service Discovery API endpoint is unable to handle the request from the client | Retry with a backoff |
-| `InvalidArgument` | Request data doesn’t contain all the required mandatory fields or consumer hasn’t be registered. Request data contains all the required mandatory fields but data is malformed. | Report error and don’t retry |
-
-### createFederatedService
-
-Adds a federated service in the federated SM consumer. Then, it can be
-discovered by the federated SM as if it were local, and the object be
-manipulated with the corresponding methods. 
-
-It is worth noting that a `FederatedService` maps to a single SNI. There's no
-set format for the value of this field in the context of federated service
-discovery. As long as the value is acceptable for DNS querying, and the
-federated service mesh owner is able to facilitate communication with the
-federated service given the value to its service mesh ingress, the owner is free
-to choose the format it prefers.
+For each `FedeatedService`, the consumer agent must create in the consumer platform an entry in the local service registry (for example, in the local DNS) with an FQDN for each of the `Instance` with the format `FederatedServiceInstance.spec.instanceID+FederatedService.spec.fqdn`. In addition, the consumer agent must create in the local service registry an entry with `FederatedService.spec.fqdn` and all the information in each `Instance` and corresponding `Endpoint`.
 
 **Request message format**
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| `Name` | `string` | No | Human readable name for the service |
-| `FQDN` | `string` | Yes | FQDN the federated service exposes outside of the owner mesh |
-| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
-| `SAN` | `string` | Yes | URI SAN of the Federated Service to enable end to end security, in SPIFFE format |
-| `MeshIngress` | `Array<Endpoint>` | Yes | The endpoints of the ingress of the mesh where the service endpoints can be reached |
-| `Protocols` | `Array<string>` | Yes | Protocols associated with the service endpoint |
-| `Description` | `string` | No | Description of the service |
-| `Tags` | `Array<string>` | No | Informative values for filtering purposes |
-| `Labels` | `Map<string, string>` | No | Informative array of KV for filtering purposes |
+| `Name` | `string` | Yes | The unique name that identifies the service within an owner platform, and serves as its unique ID. Uniqueness in the service owner platform. The consumer platform must take into account possible name collistions that may happen with other FederatedService consumed from other owner platforms through, for example, aliasing.|
+| `FQDN` | `string` | Yes | The FQDN (Fully Qualified Domain Name) the consumer platform uses as a local DNS name to access the imported FederatedService. The consumer platform DNS is programmed to reference the Endpoint of the imported FederatedService. It is unique within the service owner platform. The consumer platform must solve any possible naming collistions that may happen with other FederatedService consumed from other owner platforms through, for example, aliasing. |
+| `SANS` | `Array<string>` | No | List of URI SANs A list of SANs (Subject Alternative Names) to enable end-to-end security for the federated service. |
+| `Instances` | `Array<Instance>` | Yes | Represents an instance of the FederatedService. |
+| `Endpoints` | `Array<Endpoint>` | Yes | The endpoints that provide access to a FederatedService in the owner platform. For example, this can be an ingress. |
+| `Description` | `string` | No | Description of the FederatedService. |
+| `Tags` | `Array<string>` | No | Informative values for filtering purposes. |
+| `Labels` | `Map<string, string>` | No | Informative array of KV pairs for filtering purposes. |
 
 **Response stream message format**
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM. |
+| `Name` | `string` | Yes | The unique name that identifies the service within an owner platform, and serves as its unique ID. |
 
 **Errors**
 
@@ -414,25 +389,34 @@ to choose the format it prefers.
 **Request message payload example**
 
 ```
-federatedDatabaseExample {
+FederatedServiceDB {
     Name: “example-service”
-    FQDN: “db.mongo.com”
-    ServiceID: "outbound_.8080_.v1_.db.mongo.com"
-    SAN: “URI:spiffe://db1.mongo.com”
-    MeshIngress: [ meshIngressEndpoint ]
-    Protocols: [ “http” ]
+    FQDN: “db.mysql.com”
+    SANS: [ “URI:spiffe://db1.mysql.com” ]
+    Instances: [ DBInstance ]
+    Endpoints: [ DBEndpoint ]
     Description: "This is an example federated database service"
     Tags: [ "database" ]
-    Meta: { "db_version": "3.6" }
+    Labels: { "version": "3.6" }
 }
 
-meshIngressEndpoint {
-    Name: "84.15.190.249"
+DBInstance {
+    Name: “example-service-dbinstance1”
+    Protocol: “https"
+    Metadata: { "SNI": "outbound_.8080_.v1_.db.mysql.com" }
+    Endpoint_selector: [ "dbendpoint1" ]
+    Description: "This is the database endpoint."
+}
+
+DBEndpoint {
+    Address: "84.15.190.249"
     Port: 443
+    Labels: [ "dbendpoint1" ]
+    Description: "This is the endpoint where the owner platform is exposing the database" 
 }
 ```
 
-### deleteFederatedService
+### DELETE
 
 Removes a federated service in the federated SM consumer.
 
@@ -440,13 +424,13 @@ Removes a federated service in the federated SM consumer.
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
+| `Name` | `string` | Yes | The unique name that identifies the service within an owner platform, and serves as its unique ID. Uniqueness in the service owner platform. The consumer platform must take into account possible name collistions that may happen with other FederatedService consumed from other owner platforms through, for example, aliasing.|
 
 **Response stream message format**
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
+| `Name` | `string` | Yes | The unique name that identifies the service within an owner platform, and serves as its unique ID. |
 
 **Errors**
 
@@ -459,36 +443,33 @@ Removes a federated service in the federated SM consumer.
 
 ```
 {
-    ServiceID: "outbound_.8080_.v1_.db.mongo.com"
+     Name: “example-service”
 }
 ```
 
-### updateFederatedService
+### UPDATE
 
-Modifies any number of the fields of a federated service in the federated SM
-consumer except `ServiceID` (as if they changed, it would be then a different
-service). If `ServiceID` needs to be changed, the suggested approach would be to
-remove the entry and create a new one.
+Modifies any number of the fields of a federated service in the consumer platform, except `Name` (it it changed, it would be then considered to be a different
+federated service). If `Name` needs to be changed, the suggested approach would be to remove the federated service and create a new one with the new name. In an update message, the full object must be sent, meaning that the attributes that do not change, must be filled with their current values.
 
 **Request message parameters**
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| `Name` | `string` | Yes | Human readable name for the service |
-| `FQDN` | `string` | Yes | FQDN the federated service exposes outside of the owner mesh |
-| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
-| `SAN` | `string` | Yes | URI SAN of the Federated Service to enable end to end security, in SPIFFE format |
-| `MeshIngress` | `Array<Endpoint>` | Yes | The endpoints of the ingress of the mesh where the service endpoints can be reached |
-| `Protocols` | `Array<string>` | Yes | Protocols associated with the service endpoint |
-| `Description` | `string` | Yes | Description of the service |
-| `Tags` | `Array<string>` | Yes | Informative values for filtering purposes |
-| `Labels` | `Map<string, string>` | Yes | Informative array of KV for filtering purposes |
+| `Name` | `string` | Yes | The unique name that identifies the service within an owner platform, and serves as its unique ID. Uniqueness in the service owner platform. The consumer platform must take into account possible name collistions that may happen with other FederatedService consumed from other owner platforms through, for example, aliasing.|
+| `FQDN` | `string` | Yes | The FQDN (Fully Qualified Domain Name) the consumer platform uses as a local DNS name to access the imported FederatedService. The consumer platform DNS is programmed to reference the Endpoint of the imported FederatedService. It is unique within the service owner platform. The consumer platform must solve any possible naming collistions that may happen with other FederatedService consumed from other owner platforms through, for example, aliasing. |
+| `SANS` | `Array<string>` | Yes | List of URI SANs A list of SANs (Subject Alternative Names) to enable end-to-end security for the federated service. |
+| `Instances` | `Array<Instance>` | Yes | Represents an instance of the FederatedService. |
+| `Endpoints` | `Array<Endpoint>` | Yes | The endpoints that provide access to a FederatedService in the owner platform. For example, this can be an ingress. |
+| `Description` | `string` | Yes | Description of the FederatedService. |
+| `Tags` | `Array<string>` | Yes | Informative values for filtering purposes. |
+| `Labels` | `Map<string, string>` | Yes | Informative array of KV pairs for filtering purposes. |
 
 **Response stream message format**
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| `ServiceID` | `string` | Yes | Name assigned to the service in a particular owner SM. It must be unique in the owner SM and will be the value sent as the SNI header by the consumer SM to a particular owner SM. Each SM vendor will possibly have a different kind of SNI and thus this spec does not define a specific format. |
+| `Name` | `string` | Yes | The unique name that identifies the service within an owner platform, and serves as its unique ID. |
 
 **Errors**
 
@@ -500,38 +481,71 @@ remove the entry and create a new one.
 **Request message payload example**
 
 ```
-federatedDatabaseExample {
+FederatedServiceDB {
     Name: “example-service”
-    FQDN: “db.mongo.com”
-    ServiceID: "outbound_.8080_.v1_.db.mongo.com"
-    SAN: “URI:spiffe://db1.mongo.com”
-    MeshIngress: [ meshIngressEndpoint ]
-    Protocols: [ “mongo” ]
-    Description: "This is an example federated mongo database service"
-    Tags: [ "database", "mongo" ]
-    Meta: { "db_version": "3.6", "zone": "us-east-1" }
+    FQDN: “db.mysql.com”
+    SANS: [ “URI:spiffe://db1.mysql.com” ]
+    Instances: [ DBInstance ]
+    Endpoints: [ DBEndpoint ]
+    Description: "This is an example federated database service"
+    Tags: [ "database", "mysql" ]
+    Labels: { "version": "3.6", "zone": "us-east-1" }
 }
 
-meshIngressEndpoint {
-    Name: "84.15.190.249"
+DBInstance {
+    Name: “example-service-dbinstance1”
+    Protocol: “https"
+    Metadata: { "SNI": "outbound_.8080_.v1_.db.mysql.com" }
+    Endpoint_selector: [ "dbendpoint1" ]
+    Description: "This is the database endpoint."
+}
+
+DBEndpoint {
+    Address: "84.15.190.249"
     Port: 443
+    Labels: [ "dbendpoint1" ]
+    Description: "This is the endpoint where the owner platform is exposing the database" 
 }
 ```
 
-### Complex Type MeshIngress
+### Complex Type Instance
 
-A mesh ingress represents the location of a service. It can be used in multiple
-situations where a location identification for a service is needed. In this
-spec, this type has been used to represent a network entry point for an owner
-Service Mesh (typically an ingress gateway) that can be used to access a service
-or a set of services.
+An `Instance` represents one of the many possible backing microservices for a federated service.
+
+`Instance` has mandatory labels. These instance labels are used to associate each `Instance` to one or more `Endpoint`. If there are no matches, consumer agent implementors must associate to the `Instance` all `Endpoint`.
+
+The Metadata attribute is used to be able to transport the required information for each different use case, through reserved keys. Additional keys may also be used and may be incorporated as additional reserved keys in the protocol object model.
+
+For example, for TLS connections with SNI routing at owner platform ingress, you may want to use SNI. It is worth noting that there is no set format for the value of the SNI in the context of a federated service, as different platforms may have different formats. As long as the service owner is able to facilitate communication with the federated service trough this value to its service mesh ingress, the owner is free to choose the format it prefers.
+
+For example, for TCP cleartext connections with hostname based routing, you may want to use HOSTNAME and PORT.
+
+For example, for TCP cleartext connections with NAT based routing, you may want to use only PORT.
+
+**Instance**
+
+| Parameter | Data type | Required | Description |
+| --- | --- | --- | --- |
+| `ID` | `string` | Yes | The unique identifier for the federated service instance within its group of instances for a FederatedService. |
+| `Protocol` | `string` | Yes | The protocol corresponding to the federated service instance. MUST be one of `HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS|MTLS` |
+| `Metadata` | `Map<string, string>` | Yes | Additional metadata for the purpose of establishing connectivity. RESERVED keys are `SNI|HOSTNAME|PORT` |
+| `EndpointSelector` | `Array<string>` | Yes | The endpoint labels are used to associate the `Instance` to one or more `Endpoint`. If there are no matches, the `Instance` is associated to all `Endpoint`. |
+| `Description` | `string` | No | Description of the Instance. |
+
+### Complex Type Endpoint
+
+An `Endpoint` represents the location of a service that provides access to a federated service in the owner platform. In this spec, this type has been used to represent a network entry point for an owner platform (typically an ingress gateway) that can be used to access one or more instances of the federated service.
+
+`Endpoint` has mandatory labels. These endpoint labels are used to associate each `Instance` to one or more `Endpoint`. If there are no matches, consumer agent implementors must associate to the mismatching `Instance` all `Endpoint`.
 
 **Endpoint**
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
 | `Address` | `string` | Yes | This is the address associated with the network endpoint. Valid values are host IP addresses and FQDN. |
-| `Port` | `int` | Yes | Port associated with the network endpoint. |
+| `Port` | `int` | Yes | Port associated with the network endpoint where the federated service is available . |
+| `Labels` | `Array<string>` | Yes | The endpoint labels are used to associate each `Instance` to one or more `Endpoint`. If there are no matches, the `Instance` is associated to all `Endpoint`. |
+| `Description` | `string` | No | Description of the Endpoint. |
 
 ## Appendix A. Sample State Machine Implementation of registerFederatedService
 
