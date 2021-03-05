@@ -424,7 +424,7 @@ Removes a federated service in the federated SM consumer.
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| `Name` | `string` | Yes | The unique name that identifies the service within an owner platform, and serves as its unique ID. Uniqueness in the service owner platform. The consumer platform must take into account possible name collistions that may happen with other FederatedService consumed from other owner platforms through, for example, aliasing.|
+| `Name` | `string` | Yes | The unique name that identifies the service within an owner platform, and serves as its unique ID. Uniqueness in the service owner platform. The consumer platform must take into account possible name collisions that may happen with other `FederatedService` consumed from other owner platforms through, for example, aliasing. |
 
 **Response stream message format**
 
