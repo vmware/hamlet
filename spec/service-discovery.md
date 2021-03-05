@@ -370,7 +370,7 @@ For each `FederatedService`, the consumer agent must create in the consumer plat
 | `SANS` | `Array<string>` | No | List of URI SANs A list of SANs (Subject Alternative Names) to enable end-to-end security for the federated service. |
 | `Instances` | `Array<Instance>` | Yes | Represents an instance of the `FederatedService`. |
 | `Endpoints` | `Array<Endpoint>` | Yes | The endpoints that provide access to a `FederatedService` in the owner platform. For example, this can be an ingress. |
-| `Description` | `string` | No | Description of the FederatedService. |
+| `Description` | `string` | No | Description of the `FederatedService`. |
 | `Tags` | `Array<string>` | No | Informative values for filtering purposes. |
 | `Labels` | `Map<string, string>` | No | Informative array of KV pairs for filtering purposes. |
 
