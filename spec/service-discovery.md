@@ -514,7 +514,7 @@ An `Instance` represents one of the many possible backing microservices for a fe
 
 `Instance` has mandatory labels. These instance labels are used to associate each `Instance` to one or more `Endpoint`. If there are no matches, consumer agent implementors must associate to the `Instance` all `Endpoint`.
 
-The Metadata attribute is used to be able to transport the required information for each different use case, through reserved keys. Additional keys may also be used and may be incorporated as additional reserved keys in the protocol object model.
+The `Metadata` attribute is used to be able to transport the required information for each different use case, through reserved keys. Additional keys may also be used and may be incorporated as additional reserved keys in the protocol object model.
 
 For example, for TLS connections with SNI routing at owner platform ingress, you may want to use SNI. It is worth noting that there is no set format for the value of the SNI in the context of a federated service, as different platforms may have different formats. As long as the service owner is able to facilitate communication with the federated service trough this value to its service mesh ingress, the owner is free to choose the format it prefers.
 
