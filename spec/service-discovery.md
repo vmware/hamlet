@@ -461,7 +461,7 @@ federated service). If `Name` needs to be changed, the suggested approach would 
 | `SANS` | `Array<string>` | Yes | List of URI SANs A list of SANs (Subject Alternative Names) to enable end-to-end security for the federated service. |
 | `Instances` | `Array<Instance>` | Yes | Represents an instance of the `FederatedService`. |
 | `Endpoints` | `Array<Endpoint>` | Yes | The endpoints that provide access to a `FederatedService` in the owner platform. For example, this can be an ingress. |
-| `Description` | `string` | Yes | Description of the FederatedService. |
+| `Description` | `string` | Yes | Description of the `FederatedService`. |
 | `Tags` | `Array<string>` | Yes | Informative values for filtering purposes. |
 | `Labels` | `Map<string, string>` | Yes | Informative array of KV pairs for filtering purposes. |
 
