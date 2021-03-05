@@ -481,7 +481,7 @@ federated service). If `Name` needs to be changed, the suggested approach would 
 **Request message payload example**
 
 ```
-FederatedServiceDB {
+FederatedService {
     Name: “example-service”
     FQDN: “db.mysql.com”
     SANS: [ “URI:spiffe://db1.mysql.com” ]
