@@ -389,7 +389,7 @@ For each `FederatedService`, the consumer agent must create in the consumer plat
 **Request message payload example**
 
 ```
-FederatedServiceDB {
+FederatedService {
     Name: “example-service”
     FQDN: “db.mysql.com”
     SANS: [ “URI:spiffe://db1.mysql.com” ]
