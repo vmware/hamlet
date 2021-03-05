@@ -526,7 +526,7 @@ For example, for TCP cleartext connections with NAT based routing, you may want 
 
 | Parameter | Data type | Required | Description |
 | --- | --- | --- | --- |
-| `ID` | `string` | Yes | The unique identifier for the federated service instance within its group of instances for a FederatedService. |
+| `ID` | `string` | Yes | The unique identifier for the federated service instance within its group of instances for a `FederatedService`. |
 | `Protocol` | `string` | Yes | The protocol corresponding to the federated service instance. MUST be one of `HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS|MTLS` |
 | `Metadata` | `Map<string, string>` | Yes | Additional metadata for the purpose of establishing connectivity. RESERVED keys are `SNI|HOSTNAME|PORT` |
 | `EndpointSelector` | `Array<string>` | Yes | The endpoint labels are used to associate the `Instance` to one or more `Endpoint`. If there are no matches, the `Instance` is associated to all `Endpoint`. |
