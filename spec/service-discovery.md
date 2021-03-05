@@ -530,7 +530,7 @@ For example, for TCP cleartext connections with NAT based routing, you may want 
 | `Protocol` | `string` | Yes | The protocol corresponding to the federated service instance. MUST be one of `HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS|MTLS` |
 | `Metadata` | `Map<string, string>` | Yes | Additional metadata for the purpose of establishing connectivity. RESERVED keys are `SNI|HOSTNAME|PORT` |
 | `EndpointSelector` | `Array<string>` | Yes | The endpoint labels are used to associate the `Instance` to one or more `Endpoint`. If there are no matches, the `Instance` is associated to all `Endpoint`. |
-| `Description` | `string` | No | Description of the Instance. |
+| `Description` | `string` | No | Description of the `Instance`. |
 
 ### Complex Type Endpoint
 
