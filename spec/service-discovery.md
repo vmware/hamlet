@@ -500,7 +500,7 @@ Instance {
     Description: "This is the database endpoint."
 }
 
-DBEndpoint {
+Endpoint {
     Address: "84.15.190.249"
     Port: 443
     Labels: [ "dbendpoint1" ]
