@@ -49,6 +49,11 @@ message StreamRequest {
   // If there is a failure in consuming a message, an appropriate status code
   // must be set along with the error details in the status' message field.
   google.rpc.Status status = 3;
+
+  // context which will be used for coorelation between req/response
+  // on first call the context will be set and will be returned with all responses.
+  // on future response as ack the same context will be used.
+  string context = 4;
 }
 
 // StreamResponse represents a streaming response sent by a federated service
@@ -83,6 +88,9 @@ message StreamResponse {
 
   // REQUIRED. The operation to be performed in relation to the resource.
   Operation operation = 4;
+
+  // this is the context that was send in the initials request call
+  string context = 5;
 }
 message BidirectionalStream {
   StreamRequest request = 1;
