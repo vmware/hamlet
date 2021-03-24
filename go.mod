@@ -1,4 +1,4 @@
-module github.com/vmware/hamlet
+module github.com/sushilks/hamlet
 
 go 1.12
 
