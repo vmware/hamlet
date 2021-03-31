@@ -1,7 +1,7 @@
 // Copyright 2019 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package lifecycle
+package lifecycle_v1alpha1
 
 import (
 	"context"
