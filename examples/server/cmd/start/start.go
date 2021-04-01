@@ -4,8 +4,12 @@
 package start
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
-	"github.com/vmware/hamlet/examples/server/pkg/lifecycle"
+	"github.com/vmware/hamlet/examples/server/pkg/lifecycle_v1alpha1"
+	"github.com/vmware/hamlet/examples/server/pkg/lifecycle_v1alpha2"
 )
 
 // flagSet represents the flags available with the start subcommand.
@@ -14,6 +18,7 @@ type flagSet struct {
 	PeerCert    string
 	PeerKey     string
 	Port        uint32
+	ApiVersion  string
 }
 
 // NewCommand returns a new Command instance for the start subcommand.
@@ -25,8 +30,17 @@ func NewCommand() *cobra.Command {
 		Short: "Start the server",
 		Long:  "Start the server",
 		Run: func(cmd *cobra.Command, args []string) {
-			lifecycle.Start(flags.RootCACerts, flags.PeerCert,
-				flags.PeerKey, flags.Port)
+			if flags.ApiVersion == "v1alpha1" {
+				lifecycle_v1alpha1.Start(flags.RootCACerts, flags.PeerCert,
+					flags.PeerKey, flags.Port)
+			} else if flags.ApiVersion == "v1alpha2" {
+				lifecycle_v1alpha2.Start(flags.RootCACerts, flags.PeerCert,
+					flags.PeerKey, flags.Port, "token-1234")
+			} else {
+				fmt.Fprintf(os.Stderr, "Could not find version %s for client\n", flags.ApiVersion)
+				os.Exit(1)
+			}
+
 		},
 	}
 
@@ -34,9 +48,11 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(&flags.PeerCert, "peer-cert", "", "the peer certificate path")
 	cmd.Flags().StringVar(&flags.PeerKey, "peer-key", "", "the peer key path")
 	cmd.Flags().Uint32Var(&flags.Port, "port", 8000, "the port to listen for requests on")
+	cmd.Flags().StringVar(&flags.ApiVersion, "api-version", "", "api version to use v1alpha1 or v1alpha2")
 
 	cmd.MarkFlagRequired("root-ca-cert")
 	cmd.MarkFlagRequired("peer-cert")
 	cmd.MarkFlagRequired("peer-key")
+	cmd.MarkFlagRequired("api-version")
 	return cmd
 }

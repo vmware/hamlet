@@ -6,16 +6,17 @@ package client
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
 	types2 "github.com/vmware/hamlet/api/types/v1alpha2"
+	"github.com/vmware/hamlet/pkg/v1alpha2/registry/access"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/consumer"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/provider"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/resources"
+	"github.com/vmware/hamlet/pkg/v1alpha2/stream_handler"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -24,9 +25,10 @@ import (
 // Client is an abstraction over the federated resource discovery protocol to be
 // implemented by the client.
 type Client interface {
-	Start(ctx context.Context, resourceUrl, connectionContext string) error
+	Start(ctx context.Context, reosourceId, connectionContext string) error
 
-	WatchRemoteResources(observer FederatedServiceObserver) error
+	WatchRemoteResources(id string, observer access.FederatedServiceObserverV1Alpha2) error
+	UnwatchRemoteResources(id string) error
 	// create/update a resource in registry, Create notifies to the attached consumers.
 	Upsert(resourceId string, dt *types2.FederatedService) error
 	// delete a resource from register, Delete notifies the deletion of a resource.
@@ -35,6 +37,8 @@ type Client interface {
 
 // client implements the federated resource discovery interface.
 type client struct {
+	access.RemoteResourceAccessV1Alpha2
+	access.LocalResourceAccessV1Alpha2
 	// serverAddr is the address of the federated service mesh owner.
 	serverAddr string
 
@@ -48,8 +52,6 @@ type client struct {
 	//dial option s
 	dialOptions []grpc.DialOption
 
-	localResources  resources.LocalResources
-	remoteResources resources.RemoteResources
 	// dsClient is the gRPC client for the federated resource discovery
 	// protocol.
 	dsClient rd.DiscoveryServiceClient
@@ -63,10 +65,9 @@ func NewClient(serverAddr string, tlsConfig *tls.Config) (Client, error) {
 	client := &client{
 		serverAddr:      serverAddr,
 		tlsConfig:       tlsConfig,
-		localResources:  resources.NewLocalResources(),
-		remoteResources: resources.NewRemoteResources(),
-		streamSendMutex: &sync.Mutex{},
-	}
+		streamSendMutex: &sync.Mutex{}}
+	client.LocalResources = resources.NewLocalResources()
+	client.RemoteResources = resources.NewRemoteResources()
 
 	// Prepare the dial options.
 	client.dialOptions = []grpc.DialOption{grpc.WithKeepaliveParams(keepalive.ClientParameters{
@@ -101,7 +102,9 @@ func (c *client) Close() {
 	}
 }
 
+// start the processing on client. Blocking call.
 func (c *client) Start(ctx context.Context, resourceUrl, connectionContext string) error {
+	// resourceUrl := "type.googleapis.com/federation.types.v1alpha2.FederatedService"
 	// Connect with the server.
 	var err error
 	c.conn, err = grpc.Dial(c.serverAddr, c.dialOptions...)
@@ -120,94 +123,17 @@ func (c *client) Start(ctx context.Context, resourceUrl, connectionContext strin
 		return err
 	}
 
-	// Create the initial stream request.
-	req := &rd.StreamRequest{ResourceUrl: resourceUrl, Context: connectionContext}
-	// Send the stream request.
-	err = c.sendStreamData(stream, &rd.BidirectionalStream{Request: req})
+	// only one stream
+	streamId := "client-stream-1"
+	// setup the registry
+	consumerRegistry := consumer.NewRegistry()
+	providerRegistry := provider.NewRegistry(c.RemoteResources)
+
+	err = stream_handler.Handler(streamId, resourceUrl, connectionContext,
+		stream, c.LocalResources, consumerRegistry, providerRegistry, true)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error occurred while sending stream request")
+		log.WithField("err", err).Errorln("Error occurred while working with stream")
 		return err
 	}
-
-	// Publisher Setup
-	// setup the registery
-	// localResources := resources.NewLocalResources()
-	consumerRegistry := consumer.NewRegistry()
-	co, err := consumerRegistry.Register("Client Consumer")
-	co.InitStream(resourceUrl, c.localResources)
-	// now localResource can have api call's to ti
-	// using upsert/delete and it will be kept in sync with remote connections.
-	// on the stream side
-	// co has the WatchStream channel to receive data to put on the stream
-	// co will accept ack via ProcessResponse api
-
-	// remoteResources := resources.NewRemoteResources(consumerRegistry)
-	providerRegistry := provider.NewRegistry(c.remoteResources)
-	// connect the client
-	pr, err := providerRegistry.Register("client-provider-1")
-	// now provider can accept data and
-	// var observer resources.ResourceObserver
-	// remoteResources.WatchRemoteResources("remote-watcher-1", observer)
-
-	// stream data is accepted by pr.AcceptStreamData
-	// ack/nack are generatedy by pr.WatchStream
-	// list of remote service are accessed via obeserver
-	// or by iterating on remoteResoruces DS.
-
-	// application needs to see
-	// 1. create client or server
-	// 2. create stream and attach it to providers/consumers.
-
-	// 3. create Registry for provider/consumer
-	// 4. attach provider consumer to a stream created on a client.
-	// 5. access registry via observer ... or direct access via add/remove
-	coRespChan, err := co.WatchStream("")
-	recvDataChan := make(chan *rd.BidirectionalStream)
-	func() {
-		r, err := stream.Recv()
-		if err != nil {
-			log.WithField("err", err).Errorln("Error occurred while consuming stream response")
-			close(recvDataChan)
-			return
-		}
-		recvDataChan <- r
-	}()
-	// Loop until the stream has ended.
-	for {
-		done := false
-		select {
-		case recvData, recvDataOk := <-recvDataChan:
-			if !recvDataOk {
-				done = true
-			}
-			resp := recvData.GetResponse()
-			req := recvData.GetRequest()
-			if resp != nil {
-				respAckNack, err := pr.AcceptStreamData(resp)
-				if err != nil {
-					log.WithField("err", err).Errorln("Error occurred while consuming response in producer")
-				}
-				if respAckNack != nil {
-					r := &rd.BidirectionalStream{}
-					r.Request = respAckNack
-					c.sendStreamData(stream, r)
-				}
-			}
-			if req != nil {
-				co.ProcessAckNack(req)
-			}
-
-		case sendData, sendDataOk := <-coRespChan:
-			if !sendDataOk {
-				done = true
-			}
-			fmt.Printf("got data \n")
-			r := &rd.BidirectionalStream{}
-			r.Response = sendData.Object
-			c.sendStreamData(stream, r)
-		}
-		if done {
-			break
-		}
-	}
+	return nil
 }

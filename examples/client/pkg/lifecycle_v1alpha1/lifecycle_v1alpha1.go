@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	log "github.com/sirupsen/logrus"
-	types "github.com/vmware/hamlet/api/types/v1alpha1"
+	types1 "github.com/vmware/hamlet/api/types/v1alpha1"
 	"github.com/vmware/hamlet/pkg/client"
 	"github.com/vmware/hamlet/pkg/tls"
 )
@@ -21,17 +21,17 @@ type federatedServiceObserver struct {
 	client.FederatedServiceObserver
 }
 
-func (o *federatedServiceObserver) OnCreate(fs *types.FederatedService) error {
+func (o *federatedServiceObserver) OnCreate(fs *types1.FederatedService) error {
 	log.WithField("fs", fs).Infoln("Federated service was created")
 	return nil
 }
 
-func (o *federatedServiceObserver) OnUpdate(fs *types.FederatedService) error {
+func (o *federatedServiceObserver) OnUpdate(fs *types1.FederatedService) error {
 	log.WithField("fs", fs).Infoln("Federated service was updated")
 	return nil
 }
 
-func (o *federatedServiceObserver) OnDelete(fs *types.FederatedService) error {
+func (o *federatedServiceObserver) OnDelete(fs *types1.FederatedService) error {
 	log.WithField("fs", fs).Infoln("Federated service was deleted")
 	return nil
 }

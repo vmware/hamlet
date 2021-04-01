@@ -67,21 +67,49 @@ clean:
 
 # Start the server
 # Usage: make start-server
-.PHONY: start-server
+.PHONY: start-server start-server-v1
 start-server:
+start-server-v1:
 	go run -v server/main.go start \
 		--root-ca-cert rootCA.crt \
 		--peer-cert server.crt \
 		--peer-key server.key \
-		--port 8001
+		--port 8001 \
+		--api-version "v1alpha1"
 
 # Start the client
 # Usage: make start-client
-.PHONY: start-client
+.PHONY: start-client start-client-v1
+start-client-v1:
 start-client:
 	go run -v client/main.go start \
 		--root-ca-cert rootCA.crt \
 		--peer-cert client.crt \
 		--peer-key client.key \
 		--insecure-skip-verify \
-		--server-addr ":8001"
+		--server-addr ":8001" \
+		--api-version "v1alpha1"
+
+# Start the server
+# Usage: make start-server
+.PHONY: start-server-v2
+start-server-v2:
+	go run -v server/main.go start \
+		--root-ca-cert rootCA.crt \
+		--peer-cert server.crt \
+		--peer-key server.key \
+		--port 8001 \
+		--api-version "v1alpha2"
+
+
+# Start the client
+# Usage: make start-client
+.PHONY: start-client-v2
+start-client-v2:
+	go run -v client/main.go start \
+		--root-ca-cert rootCA.crt \
+		--peer-cert client.crt \
+		--peer-key client.key \
+		--insecure-skip-verify \
+		--server-addr ":8001" \
+		--api-version "v1alpha2"

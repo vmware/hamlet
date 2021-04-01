@@ -20,6 +20,16 @@ var MaxStreamBufferSize uint32 = 4096
 
 type ResourceRegistry interface {
 	GetFull(resourceUrl string) ([](*any.Any), error)
+
+	// create/update a resource in registery,
+	// called by publisher
+	Upsert(providerId string, resourceId string, message proto.Message) error
+
+	// delete a resource from register, called by publisher
+	Delete(providerId string, resourceId string) error
+
+	// delete a provider
+	DeleteProvider(providerId string) error
 }
 
 // WatchResponse holds the information about a resource change event to be
@@ -66,6 +76,8 @@ type consumer struct {
 	// by the federated service mesh consumer.
 	streams map[string]chan WatchResponse
 
+	resourceRegistery ResourceRegistry
+
 	// mutex synchronizes the access to streams.
 	mutex *sync.Mutex
 }
@@ -82,11 +94,10 @@ func newConsumer(id string) Consumer {
 func (c *consumer) InitStream(resourceUrl string, resourceRegistry ResourceRegistry) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
 	if _, found := c.streams[resourceUrl]; found {
 		return fmt.Errorf("Consumer already subscribed to stream %s", resourceUrl)
 	}
-
+	c.resourceRegistery = resourceRegistry
 	messages, err := resourceRegistry.GetFull(resourceUrl)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -99,7 +110,8 @@ func (c *consumer) InitStream(resourceUrl string, resourceRegistry ResourceRegis
 	c.streams[resourceUrl] = make(chan WatchResponse, MaxStreamBufferSize)
 
 	for _, message := range messages {
-		if err := c.createStreamObject(message); err != nil {
+
+		if err := c.createStreamObjectFromAny(message); err != nil {
 			log.WithFields(log.Fields{
 				"resourceUrl": resourceUrl,
 				"message":     message,
@@ -119,7 +131,10 @@ func (c *consumer) createStreamObject(message proto.Message) error {
 		log.WithField("err", err).Errorln("Failed to marshal proto message")
 		return err
 	}
+	return c.createStreamObjectFromAny(res)
+}
 
+func (c *consumer) createStreamObjectFromAny(res *any.Any) error {
 	obj := &rd.StreamResponse{
 		ResourceUrl: res.TypeUrl,
 		Resource:    res,
@@ -150,10 +165,45 @@ func (c *consumer) notifyStream(resourceUrl string, wr WatchResponse) error {
 	return nil
 }
 
-func (c *consumer) NotifyStream(obj *rd.StreamResponse) error {
+func (c *consumer) NotifyStream(providerId string, obj *rd.StreamResponse) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
+	//TODO: Tie this to remote registry so that all updates are reflected there
+	// map to the local registry
+	id := ""
+	res := obj.GetResource()
+	if res != nil {
+		if res.GetTypeUrl() == "federation.types.v1alpha1.FederatedService" {
+			if err := ptypes.UnmarshalAny(res, fs); err != nil {
+				log.WithFields(log.Fields{
+					"resource": res,
+					"err":      err,
+				}).Errorln("Error occurred while unmarshalling a federated service v1alpha1")\
+				return p.prepareAcknowledgement(nonce, err), err
+			}
+			id = fs.GetFqdn()
+		} else if res.GetTypeUrl() == "federation.types.v1alpha1.FederatedService" {
+			fs := &types2.FederatedService{}
+			res := dt.GetResource()
+			if err := ptypes.UnmarshalAny(res, fs); err != nil {
+				log.WithFields(log.Fields{
+					"resource": res,
+					"err":      err,
+				}).Errorln("Error occurred while unmarshalling a federated service v1alpha2")
+				return p.prepareAcknowledgement(nonce, err), err
+			}
+			id = fs.GetFqdn()
+		} else {
+			err = fmt.Errorf("Error occurred while parsing the restream response data format with type %s", res.GetTypeUrl())
+			return d err
+		}
+	}
+	if obj.Operation == rd.StreamResponse_DELETE {
+		obj.Resource
+		c.resourceRegistery.Delete(providerId, id)
+	} else {
+		c.resourceRegistery.Upsert(providerId, id, res)
+	}
 	if _, found := c.streams[obj.ResourceUrl]; !found {
 		return nil
 	}
@@ -164,6 +214,7 @@ func (c *consumer) WatchStream(resourceUrl string) (<-chan WatchResponse, error)
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
+	log.Infof("Consumer id=%s watching for %s\n", c.id, resourceUrl)
 	stream, found := c.streams[resourceUrl]
 	if !found {
 		return nil, fmt.Errorf("Consumer hasn't subscribed to stream %s", resourceUrl)

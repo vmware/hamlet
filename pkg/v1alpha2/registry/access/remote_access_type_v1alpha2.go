@@ -1,41 +1,36 @@
-// Copyright 2019 VMware, Inc. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
-
-package client_v1alpha2
+package access
 
 import (
-	"context"
-
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	log "github.com/sirupsen/logrus"
-	types "github.com/vmware/hamlet/api/types/v1alpha2"
+	types2 "github.com/vmware/hamlet/api/types/v1alpha2"
+	"github.com/vmware/hamlet/pkg/v1alpha2/registry/resources"
 )
 
 // FederatedServiceObserver is an observer that receives notifications when
 // federated services are created, updated, or deleted.
-type FederatedServiceObserver interface {
+type FederatedServiceObserverV1Alpha2 interface {
 	// OnCreate is called when a new federated service is created.
-	OnCreate(*types.FederatedService) error
+	OnCreate(providerId string, svc *types2.FederatedService) error
 
 	// OnUpdate is called when an existing federated service is updated.
-	OnUpdate(*types.FederatedService) error
+	OnUpdate(providerId string, svc *types2.FederatedService) error
 
 	// OnDelete is called when an existing federated service is deleted.
-	OnDelete(*types.FederatedService) error
+	OnDelete(providerId string, svc *types2.FederatedService) error
 }
 
 // federatedServiceObserverDelegate is a delegate type that unmarshalls generic
 // resources to federated services before notifying a FederatedServiceObserver.
 type federatedServiceObserverDelegate struct {
-	ResourceObserver
-
+	FederatedServiceObserverV1Alpha2
 	// observer represents an instance of FederatedServiceObserver.
-	observer FederatedServiceObserver
+	observer FederatedServiceObserverV1Alpha2
 }
 
-func (d *federatedServiceObserverDelegate) OnCreate(r *any.Any) error {
-	fs := &types.FederatedService{}
+func (d *federatedServiceObserverDelegate) OnCreate(resourceUrl, providerId string, r *any.Any) error {
+	fs := &types2.FederatedService{}
 	if err := ptypes.UnmarshalAny(r, fs); err != nil {
 		log.WithFields(log.Fields{
 			"resource": r,
@@ -43,11 +38,11 @@ func (d *federatedServiceObserverDelegate) OnCreate(r *any.Any) error {
 		}).Errorln("Error occurred while unmarshalling a federated service")
 		return err
 	}
-	return d.observer.OnCreate(fs)
+	return d.observer.OnCreate(providerId, fs)
 }
 
-func (d *federatedServiceObserverDelegate) OnUpdate(r *any.Any) error {
-	fs := &types.FederatedService{}
+func (d *federatedServiceObserverDelegate) OnUpdate(resourceUrl, providerId string, r *any.Any) error {
+	fs := &types2.FederatedService{}
 	if err := ptypes.UnmarshalAny(r, fs); err != nil {
 		log.WithFields(log.Fields{
 			"resource": r,
@@ -55,11 +50,11 @@ func (d *federatedServiceObserverDelegate) OnUpdate(r *any.Any) error {
 		}).Errorln("Error occurred while unmarshalling a federated service")
 		return err
 	}
-	return d.observer.OnUpdate(fs)
+	return d.observer.OnUpdate(providerId, fs)
 }
 
-func (d *federatedServiceObserverDelegate) OnDelete(r *any.Any) error {
-	fs := &types.FederatedService{}
+func (d *federatedServiceObserverDelegate) OnDelete(resourceUrl, providerId string, r *any.Any) error {
+	fs := &types2.FederatedService{}
 	if err := ptypes.UnmarshalAny(r, fs); err != nil {
 		log.WithFields(log.Fields{
 			"resource": r,
@@ -67,10 +62,18 @@ func (d *federatedServiceObserverDelegate) OnDelete(r *any.Any) error {
 		}).Errorln("Error occurred while unmarshalling a federated service")
 		return err
 	}
-	return d.observer.OnDelete(fs)
+	return d.observer.OnDelete(providerId, fs)
 }
 
-func (c *client) WatchFederatedServices(ctx context.Context, observer FederatedServiceObserver) error {
+type RemoteResourceAccessV1Alpha2 struct {
+	RemoteResources resources.RemoteResources
+}
+
+func (c *RemoteResourceAccessV1Alpha2) WatchRemoteResources(id string, observer FederatedServiceObserverV1Alpha2) error {
 	d := &federatedServiceObserverDelegate{observer: observer}
-	return c.WatchResources(ctx, "type.googleapis.com/federation.types.v1alpha2.FederatedService", d)
+	return c.RemoteResources.WatchRemoteResources(id, d)
+}
+
+func (c *RemoteResourceAccessV1Alpha2) UnwatchRemoteResources(id string) error {
+	return c.RemoteResources.UnwatchRemoteResources(id)
 }

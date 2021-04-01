@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	log "github.com/sirupsen/logrus"
 	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
@@ -16,13 +15,13 @@ import (
 
 type ResourceObserver interface {
 	// OnCreate is called when a new resource is created.
-	OnCreate(resourceUrl string, dt *any.Any) error
+	OnCreate(resourceUrl string, providerId string, dt *any.Any) error
 
 	// OnUpdate is called when an existing resource is updated.
-	OnUpdate(resourceUrl string, dt *any.Any) error
+	OnUpdate(resourceUrl string, providerId string, dt *any.Any) error
 
 	// OnDelete is called when an existing resource is deleted.
-	OnDelete(resourceUrl string, dt *any.Any) error
+	OnDelete(resourceUrl string, providerId string, dt *any.Any) error
 }
 
 // Resources are stored in the resource registry where
@@ -43,6 +42,7 @@ type RemoteResources interface {
 	// WatchFederatedServices watches for notifications related to federated
 	// services on the federated service mesh owner.
 	WatchRemoteResources(id string, observer ResourceObserver) error
+	UnwatchRemoteResources(id string) error
 }
 
 // resources is a concrete implementation of the Resources API that publishes
@@ -65,14 +65,14 @@ func NewRemoteResources() RemoteResources {
 
 // notifyObserver notifies the observer about a particular event on a particular
 // resource as received from the federated service mesh owner.
-func (r *remoteResources) notifyObserver(observer ResourceObserver, res *rd.StreamResponse) error {
+func (r *remoteResources) notifyObserver(observer ResourceObserver, providerId string, res *rd.StreamResponse) error {
 	switch res.Operation {
 	case rd.StreamResponse_CREATE:
-		return observer.OnCreate(res.ResourceUrl, res.Resource)
+		return observer.OnCreate(res.ResourceUrl, providerId, res.Resource)
 	case rd.StreamResponse_UPDATE:
-		return observer.OnUpdate(res.ResourceUrl, res.Resource)
+		return observer.OnUpdate(res.ResourceUrl, providerId, res.Resource)
 	case rd.StreamResponse_DELETE:
-		return observer.OnDelete(res.ResourceUrl, res.Resource)
+		return observer.OnDelete(res.ResourceUrl, providerId, res.Resource)
 	default:
 		log.WithField("operation", res.Operation).Errorln("Unable to handle operation")
 		return nil
@@ -86,9 +86,9 @@ func (r *remoteResources) WatchRemoteResources(id string, observer ResourceObser
 		return fmt.Errorf("Observer with id %s already exists.", id)
 	}
 	r.observers[id] = observer
-	for _, p := range r.resources {
+	for providerId, p := range r.resources {
 		for _, v := range p {
-			err := observer.OnCreate(v.TypeUrl, v)
+			err := observer.OnCreate(v.TypeUrl, providerId, v)
 			if err != nil {
 				return err
 			}
@@ -96,13 +96,18 @@ func (r *remoteResources) WatchRemoteResources(id string, observer ResourceObser
 	}
 	return nil
 }
-
-func (r *remoteResources) Upsert(providerId string, resourceId string, message proto.Message) error {
-	obj, err := ptypes.MarshalAny(message)
-	if err != nil {
-		log.WithField("err", err).Errorln("Failed to marshal proto message")
-		return err
+func (r *remoteResources) UnwatchRemoteResources(id string) error {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	if _, ok := r.observers[id]; !ok {
+		return fmt.Errorf("Observer with id %s was not found", id)
 	}
+	delete(r.observers, id)
+	return nil
+}
+
+func (r *remoteResources) Upsert(providerId string, resourceId string, obj *any.Any) error {
+	log.Infof("RemoteResource got Upsert\n")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	p, ok := r.resources[providerId]
@@ -113,7 +118,7 @@ func (r *remoteResources) Upsert(providerId string, resourceId string, message p
 	if _, ok := p[resourceId]; ok {
 		p[resourceId] = obj
 		for _, o := range r.observers {
-			err := o.OnUpdate(obj.TypeUrl, obj)
+			err := o.OnUpdate(obj.TypeUrl, providerId, obj)
 			if err != nil {
 				return err
 			}
@@ -121,7 +126,7 @@ func (r *remoteResources) Upsert(providerId string, resourceId string, message p
 	} else {
 		p[resourceId] = obj
 		for _, o := range r.observers {
-			err := o.OnCreate(obj.TypeUrl, obj)
+			err := o.OnCreate(obj.TypeUrl, providerId, obj)
 			if err != nil {
 				return err
 			}
@@ -141,7 +146,7 @@ func (r *remoteResources) Delete(providerId, resourceId string) error {
 	if obj, ok := p[resourceId]; ok {
 		delete(p, resourceId)
 		for _, o := range r.observers {
-			o.OnDelete(obj.TypeUrl, obj)
+			o.OnDelete(obj.TypeUrl, providerId, obj)
 		}
 	} else {
 		return fmt.Errorf("Unable to find resource with id = %s", resourceId)
@@ -159,7 +164,7 @@ func (r *remoteResources) DeleteProvider(providerId string) error {
 	for rid, obj := range p {
 		delete(p, rid)
 		for _, o := range r.observers {
-			o.OnDelete(obj.TypeUrl, obj)
+			o.OnDelete(obj.TypeUrl, providerId, obj)
 		}
 	}
 	delete(r.resources, providerId)
