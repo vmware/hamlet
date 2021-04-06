@@ -68,7 +68,11 @@ message StreamResponse {
 
   // REQUIRED. The typed resource in relation to which an operation is to be
   // performed.
-  google.protobuf.Any resource = 3;
+  string resource_id = 3;
+
+  // REQUIRED. The typed resource in relation to which an operation is to be
+  // performed.
+  google.protobuf.Any resource = 4;
 
   // Operation defines the set of possible operations that can be performed in
   // relation to a resource.
@@ -77,20 +81,17 @@ message StreamResponse {
     UNKNOWN = 0;
 
     // Specifies a create operation.
-    CREATE = 1;
-
-    // Specifies an update operation.
-    UPDATE = 2;
+    UPSERT = 1;
 
     // Specifies a delete operation.
-    DELETE = 3;
+    DELETE = 2;
   }
 
   // REQUIRED. The operation to be performed in relation to the resource.
-  Operation operation = 4;
+  Operation operation = 5;
 
   // this is the context that was send in the initials request call
-  string context = 5;
+  string context = 6;
 }
 message BidirectionalStream {
   StreamRequest request = 1;
