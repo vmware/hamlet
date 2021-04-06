@@ -16,7 +16,7 @@ import (
 	"github.com/vmware/hamlet/pkg/server/state"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/access"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/consumer"
-	"github.com/vmware/hamlet/pkg/v1alpha2/registry/provider"
+	"github.com/vmware/hamlet/pkg/v1alpha2/registry/publisher"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/resources"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -33,7 +33,7 @@ type Server interface {
 
 	WatchRemoteResources(id string, observer access.FederatedServiceObserverV1Alpha2) error
 	UnwatchRemoteResources(id string) error
-	// create/update a resource in registry, Create notifies to the attached consumers.
+	// create/update a resource in registry, Create notifies to the attached publishers.
 	Upsert(resourceId string, dt *types2.FederatedService) error
 	// delete a resource from register, Delete notifies the deletion of a resource.
 	Delete(resourceId string) error
@@ -49,14 +49,14 @@ type server struct {
 	port uint32
 
 	// tlsConfig is a TLS configuration that support mTLS (mutual TLS) with
-	// the federated service mesh consumer.
+	// the federated service mesh publisher.
 	tlsConfig *tls.Config
 
 	// listener represents the TCP connection listener for the server.
 	listener net.Listener
 
 	// grpcServer represents the gRPC server that services the federated
-	// service mesh consumer's requests.
+	// service mesh publisher's requests.
 	grpcServer *grpc.Server
 
 	// stateProvider provides the mechanism to query the federated service
@@ -64,8 +64,8 @@ type server struct {
 	// of resources.
 	stateProvider state.StateProvider
 
-	consumerRegistry consumer.Registry
-	providerRegistry provider.Registry
+	publisherRegistry publisher.Registry
+	consumerRegistry  consumer.Registry
 	// dsServer is an implementation of the server APIs for the federated
 	// resource discovery protocol.
 	dsServer rd.DiscoveryServiceServer
@@ -78,7 +78,7 @@ type server struct {
 }
 
 // NewServer returns a new instance of the server given a port to run on, the
-// TLS configuration, and a state provider.
+// TLS configuration, and a state consumer.
 func NewServer(port uint32, tlsConfig *tls.Config, connectionContext string) (Server, error) {
 	// Create the listener.
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -100,17 +100,21 @@ func NewServer(port uint32, tlsConfig *tls.Config, connectionContext string) (Se
 
 	// Return a new instance of the server.
 	remoteResource := resources.NewRemoteResources()
+	consumerRegistry := consumer.NewRegistry(remoteResource)
+
+	publisherRegistry := publisher.NewRegistry()
+	localResources := resources.NewLocalResources(publisherRegistry)
 	s := &server{
 		port:              port,
 		tlsConfig:         tlsConfig,
 		listener:          listener,
 		grpcServer:        grpc.NewServer(serverOptions...),
-		consumerRegistry:  consumer.NewRegistry(),
-		providerRegistry:  provider.NewRegistry(remoteResource),
+		publisherRegistry: publisherRegistry,
+		consumerRegistry:  consumerRegistry,
 		streamSendMutex:   &sync.Mutex{},
 		connectionContext: connectionContext,
 	}
-	s.LocalResources = resources.NewLocalResources()
+	s.LocalResources = localResources
 	s.RemoteResources = remoteResource
 	rd.RegisterDiscoveryServiceServer(s.grpcServer, s)
 	return s, nil

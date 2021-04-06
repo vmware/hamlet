@@ -43,7 +43,7 @@ func notifyResourceChanges(cl client.Client) {
 	// Create a new service.
 	svc := &types2.FederatedService{
 		Name: "svc",
-		Fqdn: "svc.foo.com",
+		Fqdn: "svc.cli.bar.com",
 	}
 	if err := cl.Upsert(svc.Fqdn, svc); err != nil {
 		log.WithField("svc", svc).Errorln("Error occurred while creating service")
@@ -98,10 +98,6 @@ func Start(rootCACert string, peerCert string, peerKey string, serverAddr string
 
 	ctx := context.Background()
 
-	err = cl.Start(ctx, "type.googleapis.com/federation.types.v1alpha2.FederatedService", connectionContext)
-	if err != nil {
-		log.WithField("err", err).Fatalln("Error occurred while starting client")
-	}
 	// Run the background resource change notifier.
 	go func() {
 		for {
@@ -114,6 +110,11 @@ func Start(rootCACert string, peerCert string, peerKey string, serverAddr string
 	err = cl.WatchRemoteResources("w1", &federatedServiceObserver{})
 	if err != nil && err != io.EOF {
 		log.WithField("err", err).Fatalln("Error occurred while watching federated services")
+	}
+
+	err = cl.Start(ctx, "type.googleapis.com/federation.types.v1alpha2.FederatedService", connectionContext)
+	if err != nil {
+		log.WithField("err", err).Fatalln("Error occurred while starting client")
 	}
 
 }

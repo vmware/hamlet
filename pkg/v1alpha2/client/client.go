@@ -14,7 +14,7 @@ import (
 	types2 "github.com/vmware/hamlet/api/types/v1alpha2"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/access"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/consumer"
-	"github.com/vmware/hamlet/pkg/v1alpha2/registry/provider"
+	"github.com/vmware/hamlet/pkg/v1alpha2/registry/publisher"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/resources"
 	"github.com/vmware/hamlet/pkg/v1alpha2/stream_handler"
 	"google.golang.org/grpc"
@@ -29,7 +29,7 @@ type Client interface {
 
 	WatchRemoteResources(id string, observer access.FederatedServiceObserverV1Alpha2) error
 	UnwatchRemoteResources(id string) error
-	// create/update a resource in registry, Create notifies to the attached consumers.
+	// create/update a resource in registry, Create notifies to the attached publishers.
 	Upsert(resourceId string, dt *types2.FederatedService) error
 	// delete a resource from register, Delete notifies the deletion of a resource.
 	Delete(resourceId string) error
@@ -58,16 +58,26 @@ type client struct {
 
 	// mutex synchronizes the access to streams.
 	streamSendMutex *sync.Mutex
+
+	publisherRegistry publisher.Registry
+	consumerRegistry  consumer.Registry
 }
 
 // NewClient creates a new client instance.
 func NewClient(serverAddr string, tlsConfig *tls.Config) (Client, error) {
+	remoteResource := resources.NewRemoteResources()
+	consumerRegistry := consumer.NewRegistry(remoteResource)
+
+	publisherRegistry := publisher.NewRegistry()
+	localResources := resources.NewLocalResources(publisherRegistry)
 	client := &client{
-		serverAddr:      serverAddr,
-		tlsConfig:       tlsConfig,
-		streamSendMutex: &sync.Mutex{}}
-	client.LocalResources = resources.NewLocalResources()
-	client.RemoteResources = resources.NewRemoteResources()
+		serverAddr:        serverAddr,
+		tlsConfig:         tlsConfig,
+		consumerRegistry:  consumerRegistry,
+		publisherRegistry: publisherRegistry,
+		streamSendMutex:   &sync.Mutex{}}
+	client.LocalResources = localResources
+	client.RemoteResources = remoteResource
 
 	// Prepare the dial options.
 	client.dialOptions = []grpc.DialOption{grpc.WithKeepaliveParams(keepalive.ClientParameters{
@@ -125,12 +135,9 @@ func (c *client) Start(ctx context.Context, resourceUrl, connectionContext strin
 
 	// only one stream
 	streamId := "client-stream-1"
-	// setup the registry
-	consumerRegistry := consumer.NewRegistry()
-	providerRegistry := provider.NewRegistry(c.RemoteResources)
 
 	err = stream_handler.Handler(streamId, resourceUrl, connectionContext,
-		stream, c.LocalResources, consumerRegistry, providerRegistry, true)
+		stream, c.LocalResources, c.publisherRegistry, c.consumerRegistry, true)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error occurred while working with stream")
 		return err

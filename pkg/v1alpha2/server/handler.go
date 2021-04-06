@@ -12,14 +12,14 @@ import (
 
 func (s *server) EstablishStream(stream rd.DiscoveryService_EstablishStreamServer) error {
 	resourceUrl := "type.googleapis.com/federation.types.v1alpha2.FederatedService"
-	// Retrieve initial consumer message.
+	// Retrieve initial publisher message.
 	initData, err := stream.Recv()
 	if err != nil {
 		log.WithField("err", err).Errorln("Error occurred while establishing stream")
 		return err
 	}
 
-	// check if request field is ther
+	// check if request field is there
 	initReq := initData.Request
 	if initReq == nil {
 		log.WithField("err", err).Errorf("Did not receive request as the first message after stream creation. %v", initData)
@@ -32,16 +32,15 @@ func (s *server) EstablishStream(stream rd.DiscoveryService_EstablishStreamServe
 		return err
 	}
 
-	// Generate a unique consumer ID.
+	// Generate a unique publisher ID.
 	id, err := uuid.NewUUID()
 	if err != nil {
 		log.WithField("err", err).Errorln("Couldn't generate UUID")
 		return err
 	}
 	streamId := id.String()
-
 	err = stream_handler.Handler(streamId, resourceUrl, s.connectionContext,
-		stream, s.LocalResources, s.consumerRegistry, s.providerRegistry, true)
+		stream, s.LocalResources, s.publisherRegistry, s.consumerRegistry, true)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error occurred while working with stream")
 		return err

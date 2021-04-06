@@ -23,4 +23,4 @@ require (
 	istio.io/pkg v0.0.0-20210322140956-5892a3b28d3e
 )
 
-replace github.com/vmware/hamlet => /Users/sushils/work/vmware/allspark/hamlet
+replace github.com/vmware/hamlet => /Users/sushil/work/vmware/allspark/hamlet

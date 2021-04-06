@@ -40,7 +40,7 @@ func notifyResourceChanges(srv server.Server) {
 	// Create a new service.
 	svc := &types2.FederatedService{
 		Name: "svc",
-		Fqdn: "svc.foo.com",
+		Fqdn: "svc.srv.foo.com",
 	}
 	if err := srv.Upsert(svc.Fqdn, svc); err != nil {
 		log.WithField("svc", svc).Errorln("Error occurred while creating service")

@@ -12,14 +12,14 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	log "github.com/sirupsen/logrus"
 	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
-	"github.com/vmware/hamlet/pkg/v1alpha2/registry/consumer"
+	"github.com/vmware/hamlet/pkg/v1alpha2/registry/publisher"
 )
 
 // Resources are stored in the resource registry where
 // items can be added that needs to be passed on to the hamlet federated mesh.
 
 type LocalResources interface {
-	// create/update a resource in registry, Create notifies to the attached consumers.
+	// create/update a resource in registry, Create notifies to the attached publishers.
 	Upsert(resourceId string, message proto.Message) error
 
 	// delete a resource from register, Delete notifies the deletion of a resource.
@@ -31,27 +31,27 @@ type LocalResources interface {
 }
 
 // resources is a concrete implementation of the Resources API that publishes
-// messages to all registered federated service mesh consumers.
+// messages to all registered federated service mesh publishers.
 type localResources struct {
-	resources        map[string]*any.Any
-	consumerRegistry consumer.Registry
+	resources          map[string]*any.Any
+	publisherRegistery publisher.Registry
 	// mutex synchronizes the access to streams.
 	mutex *sync.Mutex
 }
 
 // NewResources returns a new instances of the Resources API implementation.
-func NewLocalResources() LocalResources {
+func NewLocalResources(publisherReg publisher.Registry) LocalResources {
 	return &localResources{
-		resources:        make(map[string]*any.Any),
-		consumerRegistry: consumer.NewRegistry(),
-		mutex:            &sync.Mutex{}}
+		resources:          make(map[string]*any.Any),
+		publisherRegistery: publisherReg,
+		mutex:              &sync.Mutex{}}
 }
 
-// notifyConsumers notifies all the registered federated service mesh consumers
+// notifyPublishers notifies all the registered federated service mesh publishers
 // about the given resource change.
-func (r *localResources) notifyConsumers(id string, obj *any.Any, op rd.StreamResponse_Operation) error {
-	if err := r.consumerRegistry.Notify(id, obj, op); err != nil {
-		log.WithField("err", err).Errorln("Error occurred while notifying consumer")
+func (r *localResources) notifyPublishers(id string, obj *any.Any, op rd.StreamResponse_Operation) error {
+	if err := r.publisherRegistery.Notify(id, obj, op); err != nil {
+		log.WithField("err", err).Errorln("Error occurred while notifying publisher")
 		return err
 	}
 	return nil
@@ -67,10 +67,10 @@ func (r *localResources) Upsert(id string, message proto.Message) error {
 	defer r.mutex.Unlock()
 	if _, ok := r.resources[id]; ok {
 		r.resources[id] = obj
-		return r.notifyConsumers(id, obj, rd.StreamResponse_UPDATE)
+		return r.notifyPublishers(id, obj, rd.StreamResponse_UPDATE)
 	} else {
 		r.resources[id] = obj
-		return r.notifyConsumers(id, obj, rd.StreamResponse_CREATE)
+		return r.notifyPublishers(id, obj, rd.StreamResponse_CREATE)
 	}
 }
 
@@ -79,7 +79,7 @@ func (r *localResources) Delete(id string) error {
 	defer r.mutex.Unlock()
 	if obj, ok := r.resources[id]; ok {
 		delete(r.resources, id)
-		return r.notifyConsumers(id, obj, rd.StreamResponse_DELETE)
+		return r.notifyPublishers(id, obj, rd.StreamResponse_DELETE)
 	}
 	return fmt.Errorf("Object not found with id %s", id)
 }

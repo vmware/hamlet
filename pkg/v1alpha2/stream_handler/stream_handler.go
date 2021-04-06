@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/consumer"
-	"github.com/vmware/hamlet/pkg/v1alpha2/registry/provider"
+	"github.com/vmware/hamlet/pkg/v1alpha2/registry/publisher"
 	"github.com/vmware/hamlet/pkg/v1alpha2/registry/resources"
 )
 
@@ -24,41 +24,56 @@ func Handler(
 	streamId, resourceUrl, connectionContext string,
 	stream StreamInterface,
 	localResources resources.LocalResources,
+	publisherRegistry publisher.Registry,
 	consumerRegistry consumer.Registry,
-	providerRegistry provider.Registry,
 	sendInitialReqPacket bool) error {
 
 	sendLock := &sync.Mutex{}
 
-	// add to consumer registry
-	co, err := consumerRegistry.Register(streamId)
+	// add to publisher registry
+	pub, err := publisherRegistry.Register(streamId)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error occurred while creating consumer registry")
+		log.WithField("err", err).Errorln("Error occurred while creating publisher registry")
 		return err
 	}
-	err = co.InitStream(resourceUrl, localResources)
+	defer func(streamId string) {
+		err := publisherRegistry.Deregister(streamId)
+		if err != nil {
+			log.WithField("err", err).Errorf("Error occurred while deRegistering publisher %s", streamId)
+		}
+	}(streamId)
+
+	err = pub.InitStream(resourceUrl, localResources)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error occurred while init call on consumer registry")
+		log.WithField("err", err).Errorln("Error occurred while init call on publisher registry")
 		return err
 	}
 
-	coRespChan, err := co.WatchStream(resourceUrl)
+	pubChan, err := pub.WatchStream(resourceUrl)
 	if err != nil {
 		log.WithField("err", err).Errorln("Error occurred while creating watch stream")
 		return err
 	}
-	// Register the Provider
-	pr, err := providerRegistry.Register(streamId)
+	// Register the consumer
+	pr, err := consumerRegistry.Register(streamId)
 	if err != nil {
-		log.WithField("err", err).Errorln("Error occurred while creating provider registry")
+		log.WithField("err", err).Errorln("Error occurred while creating consumer registry")
 		return err
 	}
+	defer func(streamId string) {
+		err := consumerRegistry.Deregister(streamId)
+		if err != nil {
+			log.WithField("err", err).Errorf("Error occurred while deRegistering consumer %s", streamId)
+		}
+	}(streamId)
 
 	if sendInitialReqPacket {
 		// Create the initial stream request.
 		req := &rd.StreamRequest{ResourceUrl: resourceUrl, Context: connectionContext}
 		// Send the stream request.
+		sendLock.Lock()
 		err = stream.Send(&rd.BidirectionalStream{Request: req})
+		sendLock.Unlock()
 		if err != nil {
 			log.WithField("err", err).Errorln("Error occurred while sending initial stream request")
 			return err
@@ -66,17 +81,17 @@ func Handler(
 	}
 
 	// create a channel for processing received data
-	recvDataChan := make(chan *rd.BidirectionalStream)
+	recvDataChan := make(chan *rd.BidirectionalStream, 100)
 	go func() {
-		r, err := stream.Recv()
-		log.Infof("GOT DATA FROM RECV\n")
-
-		if err != nil {
-			log.WithField("err", err).Errorln("Error occurred on stream recv call")
-			close(recvDataChan)
-			return
+		for {
+			r, err := stream.Recv()
+			if err != nil {
+				log.WithField("err", err).Errorln("Error occurred on stream recv call")
+				close(recvDataChan)
+				return
+			}
+			recvDataChan <- r
 		}
-		recvDataChan <- r
 	}()
 
 	for {
@@ -88,7 +103,7 @@ func Handler(
 			}
 			resp := recvData.GetResponse()
 			req := recvData.GetRequest()
-			log.Infof("GOT DATA FROM Stream resp=%t req=%t\n", resp != nil, req != nil)
+			// log.Infof("GOT DATA FROM Stream resp=%t req=%t\n", resp != nil, req != nil)
 			if resp != nil {
 				respAckNack, err := pr.AcceptStreamData(resp)
 				if err != nil {
@@ -96,6 +111,7 @@ func Handler(
 				}
 				if respAckNack != nil {
 					r := &rd.BidirectionalStream{}
+					respAckNack.Context = connectionContext
 					r.Request = respAckNack
 					sendLock.Lock()
 					err = stream.Send(r)
@@ -106,16 +122,24 @@ func Handler(
 				}
 			}
 			if req != nil {
-				co.ProcessAckNack(req)
+				if req.ResponseNonce != "" {
+					pub.ProcessAckNack(req)
+				} else {
+					log.Infof("got Request witout Nonce(Initial setup Request). %v\n", req)
+				}
 			}
 
-		case sendData, sendDataOk := <-coRespChan:
-			log.Infof("GOT ACK/NACK DATA FROM CONSUMER to send back %v\n", sendData)
+		case sendData, sendDataOk := <-pubChan:
+			// log.Infof("GOT Publish DATA FROM publisher %v\n", sendData)
 			if !sendDataOk {
 				done = true
 			}
+			if sendData.Error != nil {
+				// TODO :
+			}
 			r := &rd.BidirectionalStream{}
 			r.Response = sendData.Object
+			r.Response.Context = connectionContext
 			sendLock.Lock()
 			err = stream.Send(r)
 			sendLock.Unlock()
@@ -134,5 +158,6 @@ func Handler(
 			break
 		}
 	}
+	log.Infof("Stream Handler Done\n")
 	return nil
 }

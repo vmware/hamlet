@@ -9,7 +9,7 @@ type LocalResourceAccessV1Alpha2 struct {
 	LocalResources resources.LocalResources
 }
 
-// create/update a resource in registry, Create notifies to the attached consumers.
+// create/update a resource in registry, Create notifies to the attached publisher.
 func (c *LocalResourceAccessV1Alpha2) Upsert(resourceId string, dt *types2.FederatedService) error {
 	return c.LocalResources.Upsert(resourceId, dt)
 }

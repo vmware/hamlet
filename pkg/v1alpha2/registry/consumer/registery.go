@@ -1,4 +1,4 @@
-package provider
+package consumer
 
 import (
 	"fmt"
@@ -8,10 +8,10 @@ import (
 )
 
 type Registry interface {
-	// Register creates a new entry for the given Provider identified by id.
-	Register(id string) (Provider, error)
+	// Register creates a new entry for the given Consumer identified by id.
+	Register(id string) (Consumer, error)
 
-	// Deregister deregisters the provider identified by id.
+	// Deregister deregisters the consumer identified by id.
 	Deregister(id string) error
 }
 
@@ -19,8 +19,8 @@ type Registry interface {
 type registry struct {
 	Registry
 
-	// providers holds a set of registered consumers.
-	providers map[string]Provider
+	// consumers holds a set of registered consumers.
+	consumers map[string]Consumer
 
 	//
 	resources resources.RemoteResources
@@ -32,28 +32,28 @@ type registry struct {
 // NewRegistry returns a new instance of the registry.
 func NewRegistry(rr resources.RemoteResources) Registry {
 	return &registry{
-		providers: make(map[string]Provider),
+		consumers: make(map[string]Consumer),
 		resources: rr,
 		mutex:     &sync.Mutex{},
 	}
 }
 
-func (r *registry) Register(id string) (Provider, error) {
+func (r *registry) Register(id string) (Consumer, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	if _, found := r.providers[id]; found {
-		return nil, fmt.Errorf("Provider with id %s already exists", id)
+	if _, found := r.consumers[id]; found {
+		return nil, fmt.Errorf("Consumer with id %s already exists", id)
 	}
-	r.providers[id] = newProvider(id, r.resources)
-	return r.providers[id], nil
+	r.consumers[id] = newConsumer(id, r.resources)
+	return r.consumers[id], nil
 }
 
 func (r *registry) Deregister(id string) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	delete(r.providers, id)
+	delete(r.consumers, id)
 	r.resources.DeleteProvider(id)
 	return nil
 }

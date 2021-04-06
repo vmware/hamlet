@@ -7,237 +7,111 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	log "github.com/sirupsen/logrus"
 	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
+	types1 "github.com/vmware/hamlet/api/types/v1alpha1"
+	types2 "github.com/vmware/hamlet/api/types/v1alpha2"
+	"google.golang.org/genproto/googleapis/rpc/code"
+	"google.golang.org/genproto/googleapis/rpc/status"
 )
 
-// MaxStreamBufferSize represents the maximum number of elements a stream can
-// have buffered before a consumer consumes it.
-var MaxStreamBufferSize uint32 = 4096
-
-type ResourceRegistry interface {
-	GetFull(resourceUrl string) ([](*any.Any), error)
-
+type ResourcesHandler interface {
 	// create/update a resource in registery,
 	// called by publisher
-	Upsert(providerId string, resourceId string, message proto.Message) error
+	Upsert(consumerId string, resourceId string, message *any.Any) error
 
 	// delete a resource from register, called by publisher
-	Delete(providerId string, resourceId string) error
+	Delete(consumerId string, resourceId string) error
 
-	// delete a provider
+	// delete a consumer
 	DeleteProvider(providerId string) error
 }
-
-// WatchResponse holds the information about a resource change event to be
-// notified to the watcher.
-type WatchResponse struct {
-	// Object is the information about the change in a resource that's being
-	// watched.
-	Object *rd.StreamResponse
-
-	// Closed tells if the stream being watched was closed.
-	Closed bool
-
-	// Error tells of any errors while processing the stream.
-	Error error
-}
-
-// Consumer represents an instance of a federated service mesh consumer.
 type Consumer interface {
-	// InitStream initializes a resource stream for the consumer.
-	InitStream(resourceUrl string, resourceRegistry ResourceRegistry) error
+	// this is a single stream that is trying to publish
+	// services into the resource registry
+	// we will consume messages and provide acknowledgement
+	// here.
 
-	// NotifyStream lazily notifies the relevant stream, if it exists, about
-	// a change in a particular resource. This comes from consumer registery.
-	NotifyStream(obj *rd.StreamResponse) error
-
-	// for the stream side.
-	// WatchStream publishes changes to resources that are being watched.
-	WatchStream(resourceUrl string) (<-chan WatchResponse, error)
-	// process ack/nack call response
-	ProcessAckNack(obj *rd.StreamRequest)
-
-	// CloseStream closes a resource stream for the consumer.
-	CloseStream(resourceUrl string) error
+	// AcceptStream accepts messages from the consumer stream
+	AcceptStreamData(obj *rd.StreamResponse) (*rd.StreamRequest, error)
 }
 
-// consumer is a concrete implementation of the consumer API.
 type consumer struct {
 	Consumer
 
 	// id represents the unique identifier for the consumer.
 	id string
 
-	// streams represent the set of streams that are currently subscribed to
-	// by the federated service mesh consumer.
-	streams map[string]chan WatchResponse
-
-	resourceRegistery ResourceRegistry
-
+	// Remote resources
+	resourceHandler ResourcesHandler
 	// mutex synchronizes the access to streams.
 	mutex *sync.Mutex
 }
 
-// newConsumer returns a new instance of a consumer for the given id.
-func newConsumer(id string) Consumer {
+func newConsumer(id string, resourceHandler ResourcesHandler) Consumer {
 	return &consumer{
-		id:      id,
-		streams: make(map[string]chan WatchResponse),
-		mutex:   &sync.Mutex{},
+		id:              id,
+		resourceHandler: resourceHandler,
+		mutex:           &sync.Mutex{},
 	}
 }
 
-func (c *consumer) InitStream(resourceUrl string, resourceRegistry ResourceRegistry) error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	if _, found := c.streams[resourceUrl]; found {
-		return fmt.Errorf("Consumer already subscribed to stream %s", resourceUrl)
-	}
-	c.resourceRegistery = resourceRegistry
-	messages, err := resourceRegistry.GetFull(resourceUrl)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"resourceUrl": resourceUrl,
-			"err":         err,
-		}).Errorln("Error occurred while retrieving state")
-		return err
-	}
-
-	c.streams[resourceUrl] = make(chan WatchResponse, MaxStreamBufferSize)
-
-	for _, message := range messages {
-
-		if err := c.createStreamObjectFromAny(message); err != nil {
-			log.WithFields(log.Fields{
-				"resourceUrl": resourceUrl,
-				"message":     message,
-				"err":         err,
-			}).Errorln("Error occurred while creating stream object")
-			return err
-		}
-	}
-	return nil
-}
-
-// createStreamObject publishes the given message to a relevant stream with the
-// create operation.
-func (c *consumer) createStreamObject(message proto.Message) error {
-	res, err := ptypes.MarshalAny(message)
-	if err != nil {
-		log.WithField("err", err).Errorln("Failed to marshal proto message")
-		return err
-	}
-	return c.createStreamObjectFromAny(res)
-}
-
-func (c *consumer) createStreamObjectFromAny(res *any.Any) error {
-	obj := &rd.StreamResponse{
-		ResourceUrl: res.TypeUrl,
-		Resource:    res,
-		Operation:   rd.StreamResponse_CREATE,
-	}
-	return c.notifyStream(obj.ResourceUrl, WatchResponse{Object: obj})
-}
-
-// notifyStream publishes the watch response to the given stream without
-// blocking. If the buffer is full, this method returns an error.
-func (c *consumer) notifyStream(resourceUrl string, wr WatchResponse) error {
-	select {
-	case c.streams[resourceUrl] <- wr:
-		log.WithFields(log.Fields{
-			"consumer":    c.id,
-			"resourceUrl": resourceUrl,
-			"wr":          wr,
-		}).Infoln("Added object to stream")
-	default:
-		// TODO: Provide a better mechanism for handling buffer overflows.
-		log.WithFields(log.Fields{
-			"consumer":    c.id,
-			"resourceUrl": resourceUrl,
-			"wr":          wr,
-		}).Errorln("Stream full, discarding object")
-		return fmt.Errorf("Discarding object due to overflow in stream %s", resourceUrl)
-	}
-	return nil
-}
-
-func (c *consumer) NotifyStream(providerId string, obj *rd.StreamResponse) error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	//TODO: Tie this to remote registry so that all updates are reflected there
-	// map to the local registry
+func (p *consumer) AcceptStreamData(dt *rd.StreamResponse) (*rd.StreamRequest, error) {
+	res := dt.GetResource()
 	id := ""
-	res := obj.GetResource()
-	if res != nil {
-		if res.GetTypeUrl() == "federation.types.v1alpha1.FederatedService" {
-			if err := ptypes.UnmarshalAny(res, fs); err != nil {
-				log.WithFields(log.Fields{
-					"resource": res,
-					"err":      err,
-				}).Errorln("Error occurred while unmarshalling a federated service v1alpha1")\
-				return p.prepareAcknowledgement(nonce, err), err
-			}
-			id = fs.GetFqdn()
-		} else if res.GetTypeUrl() == "federation.types.v1alpha1.FederatedService" {
-			fs := &types2.FederatedService{}
-			res := dt.GetResource()
-			if err := ptypes.UnmarshalAny(res, fs); err != nil {
-				log.WithFields(log.Fields{
-					"resource": res,
-					"err":      err,
-				}).Errorln("Error occurred while unmarshalling a federated service v1alpha2")
-				return p.prepareAcknowledgement(nonce, err), err
-			}
-			id = fs.GetFqdn()
-		} else {
-			err = fmt.Errorf("Error occurred while parsing the restream response data format with type %s", res.GetTypeUrl())
-			return d err
+	nonce := dt.GetNonce()
+	var err error = nil
+	if res.GetTypeUrl() == "type.googleapis.com/federation.types.v1alpha1.FederatedService" {
+		fs := &types1.FederatedService{}
+		res := dt.GetResource()
+		if err := ptypes.UnmarshalAny(res, fs); err != nil {
+			log.WithFields(log.Fields{
+				"resource": res,
+				"err":      err,
+			}).Errorln("Error occurred while unmarshalling a federated service v1alpha1")
+			return p.prepareAcknowledgement(nonce, err), err
 		}
-	}
-	if obj.Operation == rd.StreamResponse_DELETE {
-		obj.Resource
-		c.resourceRegistery.Delete(providerId, id)
+		id = fs.GetFqdn()
+	} else if res.GetTypeUrl() == "type.googleapis.com/federation.types.v1alpha2.FederatedService" {
+		fs := &types2.FederatedService{}
+		res := dt.GetResource()
+		if err := ptypes.UnmarshalAny(res, fs); err != nil {
+			log.WithFields(log.Fields{
+				"resource": res,
+				"err":      err,
+			}).Errorln("Error occurred while unmarshalling a federated service v1alpha2")
+			return p.prepareAcknowledgement(nonce, err), err
+		}
+		id = fs.GetFqdn()
 	} else {
-		c.resourceRegistery.Upsert(providerId, id, res)
+		err = fmt.Errorf("Error occurred while parsing the restream response data format with type %s", res.GetTypeUrl())
+		return p.prepareAcknowledgement(nonce, err), err
 	}
-	if _, found := c.streams[obj.ResourceUrl]; !found {
-		return nil
+
+	if dt.Operation == rd.StreamResponse_CREATE || dt.Operation == rd.StreamResponse_UPDATE {
+		log.Infof("Consumer : Receive Upsert with id %s nonce %s\n", id, dt.Nonce)
+		p.resourceHandler.Upsert(p.id, id, res)
+	} else if dt.Operation == rd.StreamResponse_DELETE {
+		log.Infof("Consumer : Receive Delete with id %s nonce %s\n", id, dt.Nonce)
+		p.resourceHandler.Delete(p.id, id)
+	} else {
+		err = fmt.Errorf("Error occurred while parsing the operation type %v", dt.GetOperation())
 	}
-	return c.notifyStream(obj.ResourceUrl, WatchResponse{Object: obj})
+	return p.prepareAcknowledgement(nonce, err), err
 }
 
-func (c *consumer) WatchStream(resourceUrl string) (<-chan WatchResponse, error) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	log.Infof("Consumer id=%s watching for %s\n", c.id, resourceUrl)
-	stream, found := c.streams[resourceUrl]
-	if !found {
-		return nil, fmt.Errorf("Consumer hasn't subscribed to stream %s", resourceUrl)
+// prepareAcknowledgement prepares the acknowledgement for a previously consumed
+// notification from the federated service mesh owner.
+func (p *consumer) prepareAcknowledgement(nonce string, err error) *rd.StreamRequest {
+	req := &rd.StreamRequest{}
+	req.ResponseNonce = nonce
+	if err == nil {
+		req.Status = &status.Status{Code: int32(code.Code_OK)}
+	} else {
+		log.WithField("err", err).Errorln("Error occurred while processing stream response")
+		req.Status = &status.Status{Code: int32(code.Code_UNAVAILABLE), Message: err.Error()}
 	}
-	return stream, nil
-}
-
-func (c *consumer) ProcessAckNack(obj *rd.StreamRequest) {
-
-}
-func (c *consumer) CloseStream(resourceUrl string) error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	if err := c.notifyStream(resourceUrl, WatchResponse{Closed: true}); err != nil {
-		log.WithFields(log.Fields{
-			"resourceUrl": resourceUrl,
-			"err":         err,
-		}).Errorln("Error occurred while publishing stream closure")
-		return err
-	}
-
-	close(c.streams[resourceUrl])
-	delete(c.streams, resourceUrl)
-	return nil
+	return req
 }

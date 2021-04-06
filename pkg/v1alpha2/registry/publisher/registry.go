@@ -1,26 +1,27 @@
 // Copyright 2019 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package consumer
+package publisher
 
 import (
 	"fmt"
 	"sync"
 
 	"github.com/golang/protobuf/ptypes/any"
+	log "github.com/sirupsen/logrus"
 	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
 )
 
-// Registry maintains an active set of consumers and provides a mechanism to
+// Registry maintains an active set of publishers and provides a mechanism to
 // interact with them.
 type Registry interface {
-	// Register creates a new entry for the given consumer identified by id.
-	Register(id string) (Consumer, error)
+	// Register creates a new entry for the given publisher identified by id.
+	Register(id string) (Publisher, error)
 
-	// Deregister deregisters the consumer identified by id.
+	// Deregister deregisters the publisher identified by id.
 	Deregister(id string) error
 
-	// notify all the consumers of a change
+	// notify all the publishers of a change
 	Notify(id string, obj *any.Any, op rd.StreamResponse_Operation) error
 }
 
@@ -33,45 +34,48 @@ type registry struct {
 	// of resources.
 	// stateProvider state.StateProvider
 
-	// consumers holds a set of registered consumers.
-	consumers map[string]Consumer
+	// publishers holds a set of registered publisher.
+	publishers map[string]Publisher
 
-	// mutex synchronizes access to the consumer listing.
+	// mutex synchronizes access to the publisher listing.
 	mutex *sync.Mutex
 }
 
 // NewRegistry returns a new instance of the registry.
 func NewRegistry() Registry {
 	return &registry{
-		consumers: make(map[string]Consumer),
-		mutex:     &sync.Mutex{},
+		publishers: make(map[string]Publisher),
+		mutex:      &sync.Mutex{},
 	}
 }
 
-func (r *registry) Register(id string) (Consumer, error) {
+func (r *registry) Register(id string) (Publisher, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	if _, found := r.consumers[id]; found {
-		return nil, fmt.Errorf("Consumer with id %s already exists", id)
+	if _, found := r.publishers[id]; found {
+		return nil, fmt.Errorf("Publisher with id %s already exists", id)
 	}
 
-	r.consumers[id] = newConsumer(id)
-	return r.consumers[id], nil
+	r.publishers[id] = newPublisher(id)
+	log.Infof("Publisher Register SIZE %d %p\n", len(r.publishers), r)
+
+	return r.publishers[id], nil
 }
 
 func (r *registry) Deregister(id string) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
+	log.Infof("Publisher DERegister SIZE %d %p\n", len(r.publishers), r)
 
-	delete(r.consumers, id)
+	delete(r.publishers, id)
 	return nil
 }
 
 func (r *registry) Notify(id string, obj *any.Any, op rd.StreamResponse_Operation) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	for _, v := range r.consumers {
+	for _, v := range r.publishers {
 		obj := &rd.StreamResponse{
 			ResourceUrl: obj.TypeUrl,
 			Resource:    obj,

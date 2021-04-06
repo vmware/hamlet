@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	log "github.com/sirupsen/logrus"
 	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
@@ -29,14 +28,14 @@ type ResourceObserver interface {
 
 type RemoteResources interface {
 
-	// create/update a resource in registery,
+	// create/update a resource in registry,
 	// called by publisher
-	Upsert(providerId string, resourceId string, message proto.Message) error
+	Upsert(providerId string, resourceId string, message *any.Any) error
 
 	// delete a resource from register, called by publisher
 	Delete(providerId string, resourceId string) error
 
-	// delete a provider
+	// delete a consumer
 	DeleteProvider(providerId string) error
 
 	// WatchFederatedServices watches for notifications related to federated
@@ -46,10 +45,10 @@ type RemoteResources interface {
 }
 
 // resources is a concrete implementation of the Resources API that publishes
-// messages to all registered federated service mesh consumers.
+// messages to all registered federated service mesh publishers.
 type remoteResources struct {
-	// consumerRegistry holds an active set of registered federated service
-	// mesh consumers.
+	// publisherRegistry holds an active set of registered federated service
+	// mesh publishers.
 	resources map[string]map[string]*any.Any
 	observers map[string]ResourceObserver
 	mutex     *sync.Mutex
@@ -107,7 +106,7 @@ func (r *remoteResources) UnwatchRemoteResources(id string) error {
 }
 
 func (r *remoteResources) Upsert(providerId string, resourceId string, obj *any.Any) error {
-	log.Infof("RemoteResource got Upsert\n")
+	log.Infof("RemoteResource got Upsert provider=%s resource=%s\n", providerId, resourceId)
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	p, ok := r.resources[providerId]
@@ -137,11 +136,12 @@ func (r *remoteResources) Upsert(providerId string, resourceId string, obj *any.
 }
 
 func (r *remoteResources) Delete(providerId, resourceId string) error {
+	log.Infof("RemoteResource got Delete provider=%s resource=%s\n", providerId, resourceId)
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	p, ok := r.resources[providerId]
 	if !ok {
-		return fmt.Errorf("Unable to find provider id = %s when trying to delete %s", providerId, resourceId)
+		return fmt.Errorf("Unable to find consumer id = %s when trying to delete %s", providerId, resourceId)
 	}
 	if obj, ok := p[resourceId]; ok {
 		delete(p, resourceId)
@@ -159,7 +159,7 @@ func (r *remoteResources) DeleteProvider(providerId string) error {
 	defer r.mutex.Unlock()
 	p, ok := r.resources[providerId]
 	if !ok {
-		return fmt.Errorf("Unable to find provider id = %s when trying to delete provider", providerId)
+		return fmt.Errorf("Unable to find consumer id = %s when trying to delete consumer", providerId)
 	}
 	for rid, obj := range p {
 		delete(p, rid)
