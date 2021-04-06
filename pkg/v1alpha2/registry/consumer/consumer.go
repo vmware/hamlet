@@ -91,10 +91,10 @@ func (p *consumer) AcceptStreamData(dt *rd.StreamResponse) (*rd.StreamRequest, e
 	}
 
 	if dt.Operation == rd.StreamResponse_CREATE || dt.Operation == rd.StreamResponse_UPDATE {
-		log.Infof("Consumer : Receive Upsert with id %s nonce %s\n", id, dt.Nonce)
+		log.Debugf("Consumer : Receive Upsert with id %s nonce %s\n", id, dt.Nonce)
 		p.resourceHandler.Upsert(p.id, id, res)
 	} else if dt.Operation == rd.StreamResponse_DELETE {
-		log.Infof("Consumer : Receive Delete with id %s nonce %s\n", id, dt.Nonce)
+		log.Debugf("Consumer : Receive Delete with id %s nonce %s\n", id, dt.Nonce)
 		p.resourceHandler.Delete(p.id, id)
 	} else {
 		err = fmt.Errorf("Error occurred while parsing the operation type %v", dt.GetOperation())

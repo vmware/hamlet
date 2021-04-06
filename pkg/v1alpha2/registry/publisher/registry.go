@@ -58,7 +58,6 @@ func (r *registry) Register(id string) (Publisher, error) {
 	}
 
 	r.publishers[id] = newPublisher(id)
-	log.Infof("Publisher Register SIZE %d %p\n", len(r.publishers), r)
 
 	return r.publishers[id], nil
 }

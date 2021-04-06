@@ -5,6 +5,7 @@ package lifecycle_v1alpha2
 
 import (
 	"os"
+	"io"
 	"os/signal"
 	"syscall"
 	"time"
@@ -21,17 +22,17 @@ type federatedServiceObserver struct {
 }
 
 func (o *federatedServiceObserver) OnCreate(providerId string, fs *types2.FederatedService) error {
-	log.WithField("fs", fs).Infoln("Federated service was created")
+	log.Infof("server:RemoteResources:Federated service %s was created from provider %s\n", fs.GetFqdn(), providerId)
 	return nil
 }
 
 func (o *federatedServiceObserver) OnUpdate(providerId string, fs *types2.FederatedService) error {
-	log.WithField("fs", fs).Infoln("Federated service was updated")
+	log.Infof("server:RemoteResources:Federated service %s was updated from provider %s\n", fs.GetFqdn(), providerId)
 	return nil
 }
 
 func (o *federatedServiceObserver) OnDelete(providerId string, fs *types2.FederatedService) error {
-	log.WithField("fs", fs).Infoln("Federated service was deleted")
+	log.Infof("server:RemoteResources:Federated service %s was deleted from provider %s\n", fs.GetFqdn(), providerId)
 	return nil
 }
 
@@ -46,7 +47,7 @@ func notifyResourceChanges(srv server.Server) {
 		log.WithField("svc", svc).Errorln("Error occurred while creating service")
 		return
 	}
-	log.WithField("svc", svc).Infoln("Successfully created a service")
+	log.WithField("svc", svc).Infof("server:LocalResources: Created a service %s", svc.Fqdn)
 
 	// Wait for some time.
 	time.Sleep(1 * time.Second)
@@ -57,7 +58,7 @@ func notifyResourceChanges(srv server.Server) {
 		log.WithField("svc", svc).Errorln("Error occurred while updating service")
 		return
 	}
-	log.WithField("svc", svc).Infoln("Successfully updated a service")
+	log.WithField("svc", svc).Infof("server:LocalResources: Updated a service %s", svc.Fqdn)
 
 	// Wait for some time.
 	time.Sleep(1 * time.Second)
@@ -67,7 +68,7 @@ func notifyResourceChanges(srv server.Server) {
 		log.WithField("svc", svc).Errorln("Error occurred while deleting service")
 		return
 	}
-	log.WithField("svc", svc).Infoln("Successfully deleted a service")
+	log.WithField("svc", svc).Infof("server:LocalResources: Deleted a service %s", svc.Fqdn)
 
 	// Wait for some time.
 	time.Sleep(1 * time.Second)
@@ -100,6 +101,11 @@ func Start(rootCACerts []string, peerCert string, peerKey string, port uint32, c
 			notifyResourceChanges(s)
 		}
 	}()
+	// Watch for federated service notifications.
+	err = s.WatchRemoteResources("w1", &federatedServiceObserver{})
+	if err != nil && err != io.EOF {
+		log.WithField("err", err).Fatalln("Error occurred while watching federated services")
+	}
 
 	// Start the server.
 	if err := s.Start(); err != nil {

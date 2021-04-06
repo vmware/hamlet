@@ -94,16 +94,6 @@ func NewClient(serverAddr string, tlsConfig *tls.Config) (Client, error) {
 	return client, nil
 }
 
-func (c *client) sendStreamData(stream rd.DiscoveryService_EstablishStreamClient, data *rd.BidirectionalStream) error {
-	c.streamSendMutex.Lock()
-	defer c.streamSendMutex.Unlock()
-	err := stream.Send(data)
-
-	if err != nil {
-		log.WithField("err", err).Errorln("Error occurred while send data to stream")
-	}
-	return err
-}
 
 func (c *client) Close() {
 	if c.conn != nil {

@@ -120,16 +120,6 @@ func NewServer(port uint32, tlsConfig *tls.Config, connectionContext string) (Se
 	return s, nil
 }
 
-func (s *server) sendStreamData(stream rd.DiscoveryService_EstablishStreamServer, data *rd.BidirectionalStream) error {
-	s.streamSendMutex.Lock()
-	defer s.streamSendMutex.Unlock()
-	err := stream.Send(data)
-	if err != nil {
-		log.WithField("err", err).Errorln("Error occurred while send data to stream")
-	}
-	return err
-}
-
 func (s *server) Start() error {
 	log.WithField("address", s.listener.Addr()).Infoln("Starting to listen to requests")
 	serv := s.grpcServer.Serve(s.listener)

@@ -106,7 +106,7 @@ func (r *remoteResources) UnwatchRemoteResources(id string) error {
 }
 
 func (r *remoteResources) Upsert(providerId string, resourceId string, obj *any.Any) error {
-	log.Infof("RemoteResource got Upsert provider=%s resource=%s\n", providerId, resourceId)
+	log.Debugf("RemoteResource got Upsert provider=%s resource=%s\n", providerId, resourceId)
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	p, ok := r.resources[providerId]
@@ -136,7 +136,7 @@ func (r *remoteResources) Upsert(providerId string, resourceId string, obj *any.
 }
 
 func (r *remoteResources) Delete(providerId, resourceId string) error {
-	log.Infof("RemoteResource got Delete provider=%s resource=%s\n", providerId, resourceId)
+	log.Debugf("RemoteResource got Delete provider=%s resource=%s\n", providerId, resourceId)
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	p, ok := r.resources[providerId]

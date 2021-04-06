@@ -10,7 +10,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/google/uuid"
+	"github.com/lithammer/shortuuid/v3"
 	log "github.com/sirupsen/logrus"
 	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
 )
@@ -134,17 +134,15 @@ func (c *publisher) createStreamObject(message proto.Message) error {
 	return c.createStreamObjectFromAny(res)
 }
 
+func (c *publisher) getNewNonce() string {
+	return shortuuid.New()
+}
 func (c *publisher) createStreamObjectFromAny(res *any.Any) error {
-	id, err := uuid.NewUUID()
-	if err != nil {
-		log.WithField("err", err).Errorln("Couldn't generate UUID")
-		return err
-	}
 	obj := &rd.StreamResponse{
 		ResourceUrl: res.TypeUrl,
 		Resource:    res,
 		Operation:   rd.StreamResponse_CREATE,
-		Nonce:       id.String(),
+		Nonce:       c.getNewNonce(),
 	}
 	return c.notifyStream(obj.ResourceUrl, WatchResponse{Object: obj})
 }
@@ -158,7 +156,7 @@ func (c *publisher) notifyStream(resourceUrl string, wr WatchResponse) error {
 			"publisher":   c.id,
 			"resourceUrl": resourceUrl,
 			"wr":          wr,
-		}).Infoln("Added object to stream")
+		}).Debugf("Added object to stream")
 	default:
 		// TODO: Provide a better mechanism for handling buffer overflows.
 		log.WithFields(log.Fields{
@@ -177,12 +175,7 @@ func (c *publisher) NotifyStream(obj *rd.StreamResponse) error {
 	if _, found := c.streams[obj.ResourceUrl]; !found {
 		return nil
 	}
-	id, err := uuid.NewUUID()
-	if err != nil {
-		log.WithField("err", err).Errorln("Couldn't generate UUID")
-		return err
-	}
-	obj.Nonce = id.String()
+	obj.Nonce = c.getNewNonce()
 	return c.notifyStream(obj.ResourceUrl, WatchResponse{Object: obj})
 }
 
@@ -199,7 +192,7 @@ func (c *publisher) WatchStream(resourceUrl string) (<-chan WatchResponse, error
 }
 
 func (c *publisher) ProcessAckNack(obj *rd.StreamRequest) {
-	log.Infof("Publisher id=%s Got ACK/NACK %v\n", c.id, obj)
+	log.Debugf("Publisher id=%s Got ACK/NACK %v\n", c.id, obj)
 }
 func (c *publisher) CloseStream(resourceUrl string) error {
 	c.mutex.Lock()

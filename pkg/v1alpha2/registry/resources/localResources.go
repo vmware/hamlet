@@ -67,8 +67,10 @@ func (r *localResources) Upsert(id string, message proto.Message) error {
 	defer r.mutex.Unlock()
 	if _, ok := r.resources[id]; ok {
 		r.resources[id] = obj
+		log.Debugf("LocalResources: Updating the local register service %s\n", id)
 		return r.notifyPublishers(id, obj, rd.StreamResponse_UPDATE)
 	} else {
+		log.Debugf("LocalResources: Creating the local register service %s\n", id)
 		r.resources[id] = obj
 		return r.notifyPublishers(id, obj, rd.StreamResponse_CREATE)
 	}
@@ -78,6 +80,7 @@ func (r *localResources) Delete(id string) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	if obj, ok := r.resources[id]; ok {
+		log.Debugf("LocalResources: Deleating the local register service %s\n", id)
 		delete(r.resources, id)
 		return r.notifyPublishers(id, obj, rd.StreamResponse_DELETE)
 	}

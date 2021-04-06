@@ -4,7 +4,7 @@
 package server
 
 import (
-	"github.com/google/uuid"
+	"github.com/lithammer/shortuuid/v3"
 	log "github.com/sirupsen/logrus"
 	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
 	"github.com/vmware/hamlet/pkg/v1alpha2/stream_handler"
@@ -33,12 +33,7 @@ func (s *server) EstablishStream(stream rd.DiscoveryService_EstablishStreamServe
 	}
 
 	// Generate a unique publisher ID.
-	id, err := uuid.NewUUID()
-	if err != nil {
-		log.WithField("err", err).Errorln("Couldn't generate UUID")
-		return err
-	}
-	streamId := id.String()
+	streamId := shortuuid.New()
 	err = stream_handler.Handler(streamId, resourceUrl, s.connectionContext,
 		stream, s.LocalResources, s.publisherRegistry, s.consumerRegistry, true)
 	if err != nil {
