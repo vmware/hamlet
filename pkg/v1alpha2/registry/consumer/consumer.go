@@ -7,12 +7,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	log "github.com/sirupsen/logrus"
 	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
-	types1 "github.com/vmware/hamlet/api/types/v1alpha1"
-	types2 "github.com/vmware/hamlet/api/types/v1alpha2"
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/genproto/googleapis/rpc/status"
 )
@@ -60,37 +57,10 @@ func newConsumer(id string, resourceHandler ResourcesHandler) Consumer {
 
 func (p *consumer) AcceptStreamData(dt *rd.StreamResponse) (*rd.StreamRequest, error) {
 	res := dt.GetResource()
-	id := ""
+	id := dt.GetResourceId()
 	nonce := dt.GetNonce()
 	var err error = nil
-	if res.GetTypeUrl() == "type.googleapis.com/federation.types.v1alpha1.FederatedService" {
-		fs := &types1.FederatedService{}
-		res := dt.GetResource()
-		if err := ptypes.UnmarshalAny(res, fs); err != nil {
-			log.WithFields(log.Fields{
-				"resource": res,
-				"err":      err,
-			}).Errorln("Error occurred while unmarshalling a federated service v1alpha1")
-			return p.prepareAcknowledgement(nonce, err), err
-		}
-		id = fs.GetFqdn()
-	} else if res.GetTypeUrl() == "type.googleapis.com/federation.types.v1alpha2.FederatedService" {
-		fs := &types2.FederatedService{}
-		res := dt.GetResource()
-		if err := ptypes.UnmarshalAny(res, fs); err != nil {
-			log.WithFields(log.Fields{
-				"resource": res,
-				"err":      err,
-			}).Errorln("Error occurred while unmarshalling a federated service v1alpha2")
-			return p.prepareAcknowledgement(nonce, err), err
-		}
-		id = fs.GetFqdn()
-	} else {
-		err = fmt.Errorf("Error occurred while parsing the restream response data format with type %s", res.GetTypeUrl())
-		return p.prepareAcknowledgement(nonce, err), err
-	}
-
-	if dt.Operation == rd.StreamResponse_CREATE || dt.Operation == rd.StreamResponse_UPDATE {
+	if dt.Operation == rd.StreamResponse_UPSERT {
 		log.Debugf("Consumer : Receive Upsert with id %s nonce %s\n", id, dt.Nonce)
 		p.resourceHandler.Upsert(p.id, id, res)
 	} else if dt.Operation == rd.StreamResponse_DELETE {

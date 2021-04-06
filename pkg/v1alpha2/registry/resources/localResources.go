@@ -27,7 +27,7 @@ type LocalResources interface {
 
 	// get a snapshot of all the items stored in the registery
 	// used when a new stream is added as watcher for getting intial snapshot.
-	GetFull(resourceUrl string) ([](*any.Any), error)
+	GetFull(resourceUrl string) (map[string](*any.Any), error)
 }
 
 // resources is a concrete implementation of the Resources API that publishes
@@ -66,14 +66,12 @@ func (r *localResources) Upsert(id string, message proto.Message) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	if _, ok := r.resources[id]; ok {
-		r.resources[id] = obj
 		log.Debugf("LocalResources: Updating the local register service %s\n", id)
-		return r.notifyPublishers(id, obj, rd.StreamResponse_UPDATE)
 	} else {
 		log.Debugf("LocalResources: Creating the local register service %s\n", id)
-		r.resources[id] = obj
-		return r.notifyPublishers(id, obj, rd.StreamResponse_CREATE)
 	}
+	r.resources[id] = obj
+	return r.notifyPublishers(id, obj, rd.StreamResponse_UPSERT)
 }
 
 func (r *localResources) Delete(id string) error {
@@ -87,13 +85,13 @@ func (r *localResources) Delete(id string) error {
 	return fmt.Errorf("Object not found with id %s", id)
 }
 
-func (r *localResources) GetFull(resourceUrl string) ([](*any.Any), error) {
+func (r *localResources) GetFull(resourceUrl string) (map[string](*any.Any), error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	dt := [](*any.Any){}
-	for _, obj := range r.resources {
+	dt := make(map[string](*any.Any))
+	for id, obj := range r.resources {
 		if obj.TypeUrl == resourceUrl || resourceUrl == "" {
-			dt = append(dt, obj)
+			dt[id] = obj
 		}
 	}
 	return dt, nil

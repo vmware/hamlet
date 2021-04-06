@@ -102,20 +102,24 @@ func Start(rootCACert string, peerCert string, peerKey string, serverAddr string
 
 	ctx := context.Background()
 
-	// Run the background resource change notifier.
 	go func() {
-		// Notify the consumers about changes to resources.
-		notifyResourceChanges(cl)
+		// Run the background resource change notifier.
+		// stagger multiple notifiers
+		go func() {
+			// Notify the consumers about changes to resources.
+			notifyResourceChanges(cl)
+		}()
+		// Wait for some time.
+		time.Sleep(1 * time.Second)
+		go func() {
+			notifyResourceChanges(cl)
+		}()
+		// Wait for some time.
+		time.Sleep(1 * time.Second)
+		go func() {
+			notifyResourceChanges(cl)
+		}()
 	}()
-	go func() {
-		// Notify the consumers about changes to resources.
-		notifyResourceChanges(cl)
-	}()
-	go func() {
-		// Notify the consumers about changes to resources.
-		notifyResourceChanges(cl)
-	}()
-
 	// Watch for federated service notifications.
 	err = cl.WatchRemoteResources("w1", &federatedServiceObserver{})
 	if err != nil && err != io.EOF {

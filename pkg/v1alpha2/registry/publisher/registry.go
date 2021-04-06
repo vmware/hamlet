@@ -77,6 +77,7 @@ func (r *registry) Notify(id string, obj *any.Any, op rd.StreamResponse_Operatio
 	for _, v := range r.publishers {
 		obj := &rd.StreamResponse{
 			ResourceUrl: obj.TypeUrl,
+			ResourceId:  id,
 			Resource:    obj,
 			Operation:   op,
 		}

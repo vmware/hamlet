@@ -20,7 +20,7 @@ import (
 var MaxStreamBufferSize uint32 = 4096
 
 type ResourceRegistry interface {
-	GetFull(resourceUrl string) ([](*any.Any), error)
+	GetFull(resourceUrl string) (map[string](*any.Any), error)
 
 	// create/update a resource in registery,
 	// called by publisher
@@ -109,9 +109,9 @@ func (c *publisher) InitStream(resourceUrl string, resourceRegistry ResourceRegi
 
 	c.streams[resourceUrl] = make(chan WatchResponse, MaxStreamBufferSize)
 
-	for _, message := range messages {
+	for id, message := range messages {
 
-		if err := c.createStreamObjectFromAny(message); err != nil {
+		if err := c.createStreamObjectFromAny(id, message); err != nil {
 			log.WithFields(log.Fields{
 				"resourceUrl": resourceUrl,
 				"message":     message,
@@ -125,23 +125,24 @@ func (c *publisher) InitStream(resourceUrl string, resourceRegistry ResourceRegi
 
 // createStreamObject publishes the given message to a relevant stream with the
 // create operation.
-func (c *publisher) createStreamObject(message proto.Message) error {
+func (c *publisher) createStreamObject(id string, message proto.Message) error {
 	res, err := ptypes.MarshalAny(message)
 	if err != nil {
 		log.WithField("err", err).Errorln("Failed to marshal proto message")
 		return err
 	}
-	return c.createStreamObjectFromAny(res)
+	return c.createStreamObjectFromAny(id, res)
 }
 
 func (c *publisher) getNewNonce() string {
 	return shortuuid.New()
 }
-func (c *publisher) createStreamObjectFromAny(res *any.Any) error {
+func (c *publisher) createStreamObjectFromAny(id string, res *any.Any) error {
 	obj := &rd.StreamResponse{
 		ResourceUrl: res.TypeUrl,
+		ResourceId:  id,
 		Resource:    res,
-		Operation:   rd.StreamResponse_CREATE,
+		Operation:   rd.StreamResponse_UPSERT,
 		Nonce:       c.getNewNonce(),
 	}
 	return c.notifyStream(obj.ResourceUrl, WatchResponse{Object: obj})

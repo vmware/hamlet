@@ -9,7 +9,6 @@ import (
 
 	"github.com/golang/protobuf/ptypes/any"
 	log "github.com/sirupsen/logrus"
-	rd "github.com/vmware/hamlet/api/resourcediscovery/v1alpha2"
 )
 
 type ResourceObserver interface {
@@ -60,22 +59,6 @@ func NewRemoteResources() RemoteResources {
 		resources: make(map[string]map[string]*any.Any),
 		observers: make(map[string]ResourceObserver),
 		mutex:     &sync.Mutex{}}
-}
-
-// notifyObserver notifies the observer about a particular event on a particular
-// resource as received from the federated service mesh owner.
-func (r *remoteResources) notifyObserver(observer ResourceObserver, providerId string, res *rd.StreamResponse) error {
-	switch res.Operation {
-	case rd.StreamResponse_CREATE:
-		return observer.OnCreate(res.ResourceUrl, providerId, res.Resource)
-	case rd.StreamResponse_UPDATE:
-		return observer.OnUpdate(res.ResourceUrl, providerId, res.Resource)
-	case rd.StreamResponse_DELETE:
-		return observer.OnDelete(res.ResourceUrl, providerId, res.Resource)
-	default:
-		log.WithField("operation", res.Operation).Errorln("Unable to handle operation")
-		return nil
-	}
 }
 
 func (r *remoteResources) WatchRemoteResources(id string, observer ResourceObserver) error {
