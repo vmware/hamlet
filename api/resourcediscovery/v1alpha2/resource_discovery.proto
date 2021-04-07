@@ -101,7 +101,7 @@ message BidirectionalStream {
   // Request payload used as starting request and for ack/nack of received responses.
   StreamRequest request = 1;
   // Response payload used for sending federated services
-  StreamResponse response = 2 ;
+  StreamResponse response = 2;
 }
 
 // DiscoveryService represents the API implemented by a federated service mesh
