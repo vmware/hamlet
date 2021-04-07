@@ -7,11 +7,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
-	types "github.com/vmware/hamlet/api/types/v1alpha1"
 	"github.com/vmware/hamlet/pkg/server"
 	"github.com/vmware/hamlet/pkg/server/state"
 	"github.com/vmware/hamlet/pkg/tls"
@@ -25,44 +23,6 @@ type emptyProvider struct {
 
 func (p *emptyProvider) GetState(string) ([]proto.Message, error) {
 	return []proto.Message{}, nil
-}
-
-// notifyResourceChanges notifies consumers about the changes in resources.
-func notifyResourceChanges(s server.Server) {
-	// Create a new service.
-	svc := &types.FederatedService{
-		Name: "svc",
-		Id:   "svc.foo.com",
-	}
-	if err := s.Resources().Create(svc); err != nil {
-		log.WithField("svc", svc).Errorln("Error occurred while creating service")
-		return
-	}
-	log.WithField("svc", svc).Infoln("Successfully created a service")
-
-	// Wait for some time.
-	time.Sleep(1 * time.Second)
-
-	// Update an existing service.
-	svc.Id = "svc.acme.com"
-	if err := s.Resources().Update(svc); err != nil {
-		log.WithField("svc", svc).Errorln("Error occurred while updating service")
-		return
-	}
-	log.WithField("svc", svc).Infoln("Successfully updated a service")
-
-	// Wait for some time.
-	time.Sleep(1 * time.Second)
-
-	// Delete an existing service.
-	if err := s.Resources().Delete(svc); err != nil {
-		log.WithField("svc", svc).Errorln("Error occurred while deleting service")
-		return
-	}
-	log.WithField("svc", svc).Infoln("Successfully deleted a service")
-
-	// Wait for some time.
-	time.Sleep(1 * time.Second)
 }
 
 // Start starts the server lifecycle.

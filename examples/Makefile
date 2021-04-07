@@ -67,20 +67,24 @@ clean:
 
 # Start the server
 # Usage: make start-server
-.PHONY: start-server start-server-v1
+.PHONY: start-server start-server-v1 start-server-v2
 start-server:
-start-server-v1:
 	go run -v server/main.go start \
 		--root-ca-cert rootCA.crt \
 		--peer-cert server.crt \
 		--peer-key server.key \
 		--port 8001 \
-		--api-version "v1alpha1"
+		--api-version ${API_VERSION}
+
+start-server-v1:
+	API_VERSION="v1alpha1" make start-server
+
+start-server-v2:
+	API_VERSION="v1alpha2" make start-server
 
 # Start the client
 # Usage: make start-client
-.PHONY: start-client start-client-v1
-start-client-v1:
+.PHONY: start-client start-client-v1 start-client-v2
 start-client:
 	go run -v client/main.go start \
 		--root-ca-cert rootCA.crt \
@@ -88,28 +92,10 @@ start-client:
 		--peer-key client.key \
 		--insecure-skip-verify \
 		--server-addr ":8001" \
-		--api-version "v1alpha1"
+		--api-version ${API_VERSION}
 
-# Start the server
-# Usage: make start-server
-.PHONY: start-server-v2
-start-server-v2:
-	go run -v server/main.go start \
-		--root-ca-cert rootCA.crt \
-		--peer-cert server.crt \
-		--peer-key server.key \
-		--port 8001 \
-		--api-version "v1alpha2"
+start-client-v1:
+	API_VERSION="v1alpha1" make start-client
 
-
-# Start the client
-# Usage: make start-client
-.PHONY: start-client-v2
 start-client-v2:
-	go run -v client/main.go start \
-		--root-ca-cert rootCA.crt \
-		--peer-cert client.crt \
-		--peer-key client.key \
-		--insecure-skip-verify \
-		--server-addr ":8001" \
-		--api-version "v1alpha2"
+	API_VERSION="v1alpha2" make start-client
