@@ -1,4 +1,4 @@
-// Copyright 2019 VMware, Inc. All Rights Reserved.
+// Copyright 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package client
@@ -93,7 +93,6 @@ func NewClient(serverAddr string, tlsConfig *tls.Config) (Client, error) {
 	}
 	return client, nil
 }
-
 
 func (c *client) Close() {
 	if c.conn != nil {
