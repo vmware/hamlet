@@ -30,7 +30,7 @@ directory.
 To compile a Protobuf file into Go, you can use the following command.
 
 ```console
-$ protoc -I api/types/v1alpha2/ federated_service.proto --go_out=api/
+$ protoc -I api/types/v1alpha2/ federated_service_v1alpha2.proto --go_out=api/
 ```
 
 To download the external dependencies, use the following commands.
@@ -44,7 +44,7 @@ To compile a Protobuf into Go along with the necessary gRPC server and client
 stubs, you can use the following command.
 
 ```console
-$ protoc -I external/ -I api/resourcediscovery/v1alpha1/ resource_discovery.proto --go_out=plugins=grpc:api/
+$ protoc -I external/ -I api/resourcediscovery/v1alpha2/ resource_discovery_v1alpha2.proto --go_out=plugins=grpc:api/
 ```
 
 ## Testing
