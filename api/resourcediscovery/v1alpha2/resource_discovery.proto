@@ -1,4 +1,4 @@
-// Copyright 2019 VMware, Inc. All Rights Reserved.
+// Copyright 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 syntax = "proto3";
@@ -90,11 +90,17 @@ message StreamResponse {
   // REQUIRED. The operation to be performed in relation to the resource.
   Operation operation = 5;
 
-  // this is the context that was send in the initials request call
+  // this is the context that was sent in the initial request call
   string context = 6;
 }
+
+// Data that is exchanged between the client / server
+// this message can be sent in both directions and captures
+// both request and response
 message BidirectionalStream {
+  // Request payload used as starting request and for ack/nack of received responses.
   StreamRequest request = 1;
+  // Response payload used for sending federated services
   StreamResponse response = 2 ;
 }
 
