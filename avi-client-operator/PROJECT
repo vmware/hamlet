@@ -1,0 +1,7 @@
+domain: tanzu.vmware.com
+repo: github.com/vmware/hamlet/avi-client-operator
+resources:
+- group: hamlet
+  kind: AVISync
+  version: v1alpha1
+version: "2"

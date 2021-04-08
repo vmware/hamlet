@@ -1,0 +1,36 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secret
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - hamlet.tanzu.vmware.com
+  resources:
+  - avisyncs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - hamlet.tanzu.vmware.com
+  resources:
+  - avisyncs/status
+  verbs:
+  - get
+  - patch
+  - update

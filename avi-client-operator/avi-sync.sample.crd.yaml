@@ -1,0 +1,22 @@
+apiVersion: hamlet.tanzu.vmware.com/v1alpha1
+kind: AVISync
+metadata:
+  name: avi-test2
+spec:
+  avi-controller-location: http://somewhere.on.internet.example.com
+  avi-controller-version: 1.2.3
+  hamlet-server-location: http://hamlet.tsm.tanzu.vmware.com
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: avi-test2
+type: hamlet.tanzu.vmware.com/avi-hamlet-client
+stringData:
+  avi-username: "tsm-avi-user"
+  avi-password: "tms-avi-password-1234"
+  avi-tenant: "admin"
+  hamlet-token: "alknv3niN*(#nv3"
+  hamlet-server-cert: |
+       "MIICpDCCAYwCCQC21sHBdyP4zjANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAlsb2NhbGhvc3QwHhcNMjEwMzMxMTgyNjA3WhcNMzEwMzI5MTgyNjA3WjAUMRIwEAYDVQQDDAlsb2NhbGhvc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDXgquBvFYYCBo4SUAeXbBJXnMBssTSzYDEbTNvQcX1Ni8ETdmtMjXnMRTNyl63JR4ZKQPmansZiZAOFvMNayn4vvmK7paor5K/BT688Ozh6TUy1HCZ5ViiTh8B011S8K2zGytFLSb3fMGMHlhcNpcrDxYng+mPjc/4QfewtpVj8PROMDXLbO7mBiWbgpufjpMXXp3B9IvLunRaFJjfLv6g3xXzrtNhwK/o8Vbdb8gzOeNZVTTeJRfl2ZX5XYJFrOnIv8QbtAZxB8/KPps7W9e1TLpw2H3hIGIT6kDDwVxXQ2TP61JoT41I/Fh7fpnPngX4/v33MwvcnXclfVxP1QXbAgMBAAEwDQYJKoZIhvcNAQELBQADggEBAL+EqIeBNabmlSWeE7ouRvX2Q1YF3eZC8urwOOaBMINUdPhO2gJT7WYvGaPMctbCDXYx+w1VSVWZUroDErlGjOOovEPQywgBxUv5ZriU4pYCysLLXFxGFu7BOt+KQ9SQ8xsHPE+xViEAooV+GBDdPbM9s9IcZqNCQaxfRg436mRuCjyeIUVDtEoUveKOUxIPksbaj2unj7NEY83SbWuCGPo5j+V8zgKNqQCgFu0ndHPoiflFnwGijzw44P2O2GRziZUkF39GUjIFLOyE5lcOusuPi3SEUNsyhHH7hZNayoICZaePTDNHDDiI8GXxZDjR6yuVGpNkYzhBczk/gPeNqdk="
+---
