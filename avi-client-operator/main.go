@@ -89,11 +89,8 @@ func main() {
 	}
 	// ctrl.Watch(&source.Kind{Type: &appsv1.Secret{}}, )
 
-	if err = (&controllers.AVISyncReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("AVISync"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr, watchNamespace); err != nil {
+	if err = controllers.NewAVISyncReconciler(mgr).
+		SetupWithManager(mgr, watchNamespace); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AVISync")
 		os.Exit(1)
 	}

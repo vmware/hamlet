@@ -33,6 +33,7 @@ type Client interface {
 	Upsert(resourceId string, dt *types2.FederatedService) error
 	// delete a resource from register, Delete notifies the deletion of a resource.
 	Delete(resourceId string) error
+	Close()
 }
 
 // client implements the federated resource discovery interface.
