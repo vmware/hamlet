@@ -31,12 +31,14 @@ import (
 	"github.com/go-logr/logr"
 	hamletv1alpha1 "github.com/vmware/hamlet/avi-client-operator/api/v1alpha1"
 	hamletClient "github.com/vmware/hamlet/pkg/v1alpha2/client"
+	"istio.io/pkg/log"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type AVISyncHandler interface {
 	Update(instance *hamletv1alpha1.AVISync, secret *AviSyncSecret) error
 	StopSync() error
+	StartSync() error
 }
 
 type aviSyncHandler struct {
@@ -75,16 +77,21 @@ func (sh *aviSyncHandler) Update(instance *hamletv1alpha1.AVISync, secret *AviSy
 	if !sh.CompareEqual(instance, secret) {
 		// delete the current sync
 		// start a new sync
-		sh.StopSync()
+		err := sh.StopSync()
+		if err != nil {
+			return err
+		}
 		sh.crd = instance
 		sh.secret = secret
-		sh.StartSync()
+		return sh.StartSync()
+
 	}
 	return nil
 }
 
 // start the sync process after the config has been updated
 func (sh *aviSyncHandler) StartSync() error {
+	log.Infof("Starting Sync...")
 	sh.startStopMutex.Lock()
 	if sh.ctxCancel != nil {
 		sh.startStopMutex.Unlock()
@@ -109,8 +116,15 @@ func (sh *aviSyncHandler) StartSync() error {
 					sh.log.Info("Client connection ended with no errors", "loop iteration", loopCount)
 				}
 			case <-ctx.Done():
-				// start event is being cancled
 				done = true
+			}
+			if !done { // wait for retry time.
+				select {
+				case <-time.After(sh.retryTimeInterval):
+					break
+				case <-ctx.Done():
+					done = true
+				}
 			}
 			if done {
 				break
@@ -124,6 +138,7 @@ func (sh *aviSyncHandler) StartSync() error {
 		sh.ctxCancel = nil
 		sh.startStopMutex.Unlock()
 	}()
+	log.Infof("Done Starting Sync...")
 	return nil
 }
 
@@ -135,9 +150,11 @@ func (sh *aviSyncHandler) StopSync() error {
 		return errors.New("Start Sync is not active can't run stop sync.")
 	}
 	// trigger the cancel
+	sh.log.Info("Stopping current client")
 	sh.ctxCancel()
 	sh.startStopMutex.Unlock()
 	<-sh.syncStopDone
+	sh.log.Info("Done Stopping current client")
 	return nil
 }
 
@@ -147,7 +164,7 @@ func (sh *aviSyncHandler) tryConnect(ctx context.Context) <-chan error {
 		// Prepare the client instance. Alternative functions for tls.Config exist in the ./pkg/tls/tls.go
 		cp := x509.NewCertPool()
 		if !cp.AppendCertsFromPEM(sh.secret.HamletServerCert) {
-			retCh <- errors.New("credentials: failed to append certificates")
+			retCh <- errors.New("credentials: failed to append certificate " + string(sh.secret.HamletServerCert))
 			return
 		}
 		tlsConfig := &tls.Config{
@@ -194,7 +211,6 @@ func (sh *aviSyncHandler) tryConnect(ctx context.Context) <-chan error {
 			return
 		}
 		retCh <- nil
-		return
 	}()
 	return retCh
 }

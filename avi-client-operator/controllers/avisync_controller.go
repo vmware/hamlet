@@ -86,7 +86,7 @@ func (r *AVISyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	err := r.Get(ctx, req.NamespacedName, aviSyncResource)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			log.Info("AviSync Resource not found. Ignoring.")
+			// log.Info("AviSync Resource not found. Ignoring.")
 			return ctrl.Result{}, nil
 		}
 		log.Error(err, "Failed to get AviSync Resource")
@@ -132,7 +132,7 @@ func (r *AVISyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		return ctrl.Result{}, err
 	}
-	log.Info(fmt.Sprintf("Secret found kind=%s type=%s data=%+v", aviSecret.Kind, aviSecret.Type, aviSecret.Data))
+	log.Info(fmt.Sprintf("Secret found kind=%s type=%s", aviSecret.Kind, aviSecret.Type))
 
 	if aviSecret.Type != AVISYNC_ExpSecretType {
 		err = fmt.Errorf("Secret %s is of type %s, was expecting it to be of type %s",
@@ -217,9 +217,19 @@ func (r *AVISyncReconciler) upsertSync(log logr.Logger, instance *hamletv1alpha1
 	defer r.syncMapLock.Unlock()
 	name := instance.Name
 	if sm, ok := r.syncMap[name]; ok {
-		sm.Update(instance, secret)
+		log.Info("Updating an existing instance of sync", "name", instance.Name)
+		err := sm.Update(instance, secret)
+		if err != nil {
+			log.Error(err, "While updating sync", "name", instance.Name)
+		}
 	} else {
-		// r.syncMap[name] = newAviSyncHandler(instance, secret)
+		log.Info("Creating a new instance of sync", "name", instance.Name)
+		aSync := newAviSyncHandler(instance, secret)
+		r.syncMap[name] = aSync
+		err := aSync.StartSync()
+		if err != nil {
+			log.Error(err, "While starting sync", "name", instance.Name)
+		}
 	}
 
 }
