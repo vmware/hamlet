@@ -21,7 +21,3 @@ require (
 	k8s.io/client-go v0.17.2
 	sigs.k8s.io/controller-runtime v0.5.0
 )
-
-replace github.com/vmware/hamlet/avi-client-operator => /Users/sushils/work/vmware/allspark/hamlet/avi-client-operator
-
-replace github.com/vmware/hamlet => /Users/sushils/work/vmware/allspark/hamlet
