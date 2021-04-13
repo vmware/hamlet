@@ -162,14 +162,19 @@ func (sh *aviSyncHandler) tryConnect(ctx context.Context) <-chan error {
 	retCh := make(chan error)
 	go func() {
 		// Prepare the client instance. Alternative functions for tls.Config exist in the ./pkg/tls/tls.go
-		cp := x509.NewCertPool()
-		if !cp.AppendCertsFromPEM(sh.secret.HamletServerCert) {
-			retCh <- errors.New("credentials: failed to append certificate " + string(sh.secret.HamletServerCert))
-			return
-		}
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: false,
-			RootCAs:            cp,
+		var tlsConfig *tls.Config
+		if len(sh.secret.HamletServerCert) == 0 {
+			tlsConfig = nil
+		} else {
+			cp := x509.NewCertPool()
+			if !cp.AppendCertsFromPEM(sh.secret.HamletServerCert) {
+				retCh <- errors.New("credentials: failed to append certificate " + string(sh.secret.HamletServerCert))
+				return
+			}
+			tlsConfig = &tls.Config{
+				InsecureSkipVerify: false,
+				RootCAs:            cp,
+			}
 		}
 		hClient, err := hamletClient.NewClient(sh.crd.Spec.HamletServerLocation, tlsConfig)
 		if err != nil {
@@ -204,9 +209,9 @@ func (sh *aviSyncHandler) tryConnect(ctx context.Context) <-chan error {
 		}
 
 		err = hClient.Start(internalCtx, "type.googleapis.com/federation.types.v1alpha2.FederatedService", sh.secret.HamletToken)
+		internalCtxCancel()
+		hClient.Close()
 		if err != nil {
-			internalCtxCancel()
-			hClient.Close()
 			retCh <- errors.New("Error occurred while starting client " + err.Error())
 			return
 		}

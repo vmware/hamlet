@@ -125,7 +125,7 @@ func Handler(
 				if req.ResponseNonce != "" {
 					pub.ProcessAckNack(req)
 				} else {
-					log.Infof("got Request witout Nonce(Initial setup Request). %v\n", req)
+					log.Infof("got Request without Nonce(Initial setup Request). %v\n", req)
 				}
 			}
 

@@ -29,10 +29,15 @@ type Client interface {
 
 	WatchRemoteResources(id string, observer access.FederatedServiceObserverV1Alpha2) error
 	UnwatchRemoteResources(id string) error
+	// Get a list of resources in remote registry
+	// get a specific item from remote registry
+
 	// create/update a resource in registry, Create notifies to the attached publishers.
 	Upsert(resourceId string, dt *types2.FederatedService) error
 	// delete a resource from register, Delete notifies the deletion of a resource.
 	Delete(resourceId string) error
+	// get a list of all resources stored in local registry
+	GetAllLocalResourceIDs(resourceType string) []string
 	Close()
 }
 
@@ -133,4 +138,8 @@ func (c *client) Start(ctx context.Context, resourceUrl, connectionContext strin
 		return err
 	}
 	return nil
+}
+
+func (c *client) GetAllLocalResourceIDs(resourceType string) []string {
+	return c.LocalResources.GetAllResourceID(resourceType)
 }

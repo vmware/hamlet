@@ -55,9 +55,9 @@ func NewCommand() *cobra.Command {
 
 	cmd.Flags().StringVar(&flags.ApiVersion, "api-version", "", "api version to use v1alpha1 or v1alpha2")
 
-	cmd.MarkFlagRequired("root-ca-cert")
-	cmd.MarkFlagRequired("peer-cert")
-	cmd.MarkFlagRequired("peer-key")
+	// cmd.MarkFlagRequired("root-ca-cert")
+	// cmd.MarkFlagRequired("peer-cert")
+	// cmd.MarkFlagRequired("peer-key")
 	cmd.MarkFlagRequired("api-version")
 	return cmd
 }

@@ -16,10 +16,23 @@ import (
 func notifyResourceChanges(cl client.Client) {
 	id := shortuuid.New()
 	for {
+		var ep []*types2.FederatedService_Endpoint
+		ep = append(ep, &types2.FederatedService_Endpoint{
+			Address: "127.1.2.3",
+			Port:    443,
+		})
+		var ins []*types2.FederatedService_Instance
+		ins = append(ins, &types2.FederatedService_Instance{
+			Id:       "inst-pool-1",
+			Protocol: "HTTP",
+			Metadata: map[string]string{"port": "1234"},
+		})
 		// Create a new service.
 		svc := &types2.FederatedService{
-			Name: "svc",
-			Fqdn: "svc." + id + ".bar.com",
+			Name:      "svc",
+			Fqdn:      "svc." + id + ".bar.com",
+			Endpoints: ep,
+			Instances: ins,
 		}
 		if err := cl.Upsert(svc.Fqdn, svc); err != nil {
 			log.WithField("svc", svc).Errorln("Error occurred while creating service")

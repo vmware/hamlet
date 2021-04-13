@@ -14,6 +14,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/vmware/hamlet v0.0.0-00010101000000-000000000000
+	google.golang.org/grpc v1.36.1
 	istio.io/pkg v0.0.0-20210322140956-5892a3b28d3e
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2
