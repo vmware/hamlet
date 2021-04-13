@@ -28,6 +28,9 @@ type LocalResources interface {
 	// get a snapshot of all the items stored in the registery
 	// used when a new stream is added as watcher for getting intial snapshot.
 	GetFull(resourceUrl string) (map[string](*any.Any), error)
+
+	// get a list of all resources id stored
+	GetAllResourceID(resourceUrl string) []string
 }
 
 // resources is a concrete implementation of the Resources API that publishes
@@ -95,4 +98,16 @@ func (r *localResources) GetFull(resourceUrl string) (map[string](*any.Any), err
 		}
 	}
 	return dt, nil
+}
+
+func (r *localResources) GetAllResourceID(resourceUrl string) []string {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	dt := []string{}
+	for id, obj := range r.resources {
+		if obj.TypeUrl == resourceUrl || resourceUrl == "" {
+			dt = append(dt, id)
+		}
+	}
+	return dt
 }

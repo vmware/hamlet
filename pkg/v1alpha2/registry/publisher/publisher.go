@@ -193,7 +193,11 @@ func (c *publisher) WatchStream(resourceUrl string) (<-chan WatchResponse, error
 }
 
 func (c *publisher) ProcessAckNack(obj *rd.StreamRequest) {
-	log.Debugf("Publisher id=%s Got ACK/NACK %v\n", c.id, obj)
+	if obj.Status.Code != 0 {
+		log.Errorf("Publisher id=%s Got ACK/NACK %v\n", c.id, obj)
+	} else {
+		log.Debugf("Publisher id=%s Got ACK/NACK %v\n", c.id, obj)
+	}
 }
 func (c *publisher) CloseStream(resourceUrl string) error {
 	c.mutex.Lock()

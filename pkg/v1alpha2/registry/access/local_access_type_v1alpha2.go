@@ -21,3 +21,8 @@ func (c *LocalResourceAccessV1Alpha2) Upsert(resourceId string, dt *types2.Feder
 func (c *LocalResourceAccessV1Alpha2) Delete(resourceId string) error {
 	return c.LocalResources.Delete(resourceId)
 }
+
+// delete a resource from register, Delete notifies the deletion of a resource.
+func (c *LocalResourceAccessV1Alpha2) GetAllResourceID(resourceType string) []string {
+	return c.LocalResources.GetAllResourceID(resourceType)
+}
