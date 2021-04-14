@@ -38,6 +38,9 @@ type Client interface {
 	Delete(resourceId string) error
 	// get a list of all resources stored in local registry
 	GetAllLocalResourceIDs(resourceType string) []string
+	// set publish mode
+	OnlyPublishResourcesWithChange(b bool)
+	// close the client connection
 	Close()
 }
 
@@ -105,6 +108,11 @@ func (c *client) Close() {
 		c.conn.Close()
 		c.conn = nil
 	}
+}
+
+// set to publish only resources that have changed.
+func (c *client) OnlyPublishResourcesWithChange(b bool) {
+	c.LocalResources.OnlyPublishResourcesWithChange(b)
 }
 
 // start the processing on client. Blocking call.

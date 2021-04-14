@@ -4,6 +4,7 @@
 package resources
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 
@@ -31,13 +32,17 @@ type LocalResources interface {
 
 	// get a list of all resources id stored
 	GetAllResourceID(resourceUrl string) []string
+
+	// set publishing mode
+	OnlyPublishResourcesWithChange(b bool)
 }
 
 // resources is a concrete implementation of the Resources API that publishes
 // messages to all registered federated service mesh publishers.
 type localResources struct {
-	resources          map[string]*any.Any
-	publisherRegistery publisher.Registry
+	resources                      map[string]*any.Any
+	publisherRegistery             publisher.Registry
+	onlyPublishResourcesWithChange bool
 	// mutex synchronizes the access to streams.
 	mutex *sync.Mutex
 }
@@ -45,9 +50,13 @@ type localResources struct {
 // NewResources returns a new instances of the Resources API implementation.
 func NewLocalResources(publisherReg publisher.Registry) LocalResources {
 	return &localResources{
-		resources:          make(map[string]*any.Any),
-		publisherRegistery: publisherReg,
-		mutex:              &sync.Mutex{}}
+		resources:                      make(map[string]*any.Any),
+		publisherRegistery:             publisherReg,
+		onlyPublishResourcesWithChange: true,
+		mutex:                          &sync.Mutex{}}
+}
+func (r *localResources) OnlyPublishResourcesWithChange(b bool) {
+	r.onlyPublishResourcesWithChange = b
 }
 
 // notifyPublishers notifies all the registered federated service mesh publishers
@@ -67,9 +76,16 @@ func (r *localResources) Upsert(id string, message proto.Message) error {
 		return err
 	}
 	r.mutex.Lock()
+	obj.GetValue()
 	defer r.mutex.Unlock()
-	if _, ok := r.resources[id]; ok {
-		log.Debugf("LocalResources: Updating the local register service %s\n", id)
+	if oldObj, ok := r.resources[id]; ok {
+		res := bytes.Compare(oldObj.Value, obj.Value)
+		if r.onlyPublishResourcesWithChange && res == 0 {
+			log.Debugf("LocalResources: IGNORING Update of local register service %s, no change detected.\n", id)
+			return nil
+		} else {
+			log.Debugf("LocalResources: Updating the local register service %s\n", id)
+		}
 	} else {
 		log.Debugf("LocalResources: Creating the local register service %s\n", id)
 	}
