@@ -182,6 +182,7 @@ func (sh *aviSyncHandler) tryConnect(ctx context.Context) <-chan error {
 				sh.crd.Spec.HamletServerLocation, err.Error()))
 			return
 		}
+		hClient.OnlyPublishResourcesWithChange(true)
 
 		aClient, err := aviClients.NewAviClient(sh.crd.Spec.AviControllerLocation,
 			sh.secret.AviUsername,

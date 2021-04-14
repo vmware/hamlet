@@ -8,29 +8,29 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
-  namespace: system
   labels:
     control-plane: controller-manager
+  name: controller-manager
+  namespace: system
 spec:
+  replicas: 1
   selector:
     matchLabels:
       control-plane: controller-manager
-  replicas: 1
   template:
     metadata:
       labels:
         control-plane: controller-manager
     spec:
       containers:
-      - command:
-        - /manager
-        args:
+      - args:
         - --enable-leader-election
-        image: controller:latest
+        command:
+        - /manager
         env:
         - name: WATCH_NAMESPACE
           value: avi-client-operator-system
+        image: gcr.io/nsx-sm/sushils/hamlet-avi-client:v0.1.0
         name: manager
         resources:
           limits:

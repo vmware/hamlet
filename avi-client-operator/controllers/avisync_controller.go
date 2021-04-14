@@ -76,7 +76,7 @@ func NewAVISyncReconciler(mgr manager.Manager) *AVISyncReconciler {
 
 // +kubebuilder:rbac:groups=hamlet.tanzu.vmware.com,resources=avisyncs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=hamlet.tanzu.vmware.com,resources=avisyncs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups="",resources=secret,verbs=get;watch;list
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;watch;list
 
 func (r *AVISyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
