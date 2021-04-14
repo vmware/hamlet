@@ -16,8 +16,3 @@ require (
 	sigs.k8s.io/controller-runtime v0.5.0
 )
 
-// replace github.com/vmware/hamlet/avi-client-operator => /Users/sushils/work/vmware/allspark/hamlet/avi-client-operator
-replace github.com/vmware/hamlet => /Users/sushils/work/vmware/allspark/hamlet
-
-// replace github.com/vmware/hamlet/avi-client-operator => github.com/sushilks/hamlet/avi-client-operator 0b40c07f644e71cc223f45b65967cbb3f13ffc5c
-// replace github.com/vmware/hamlet => github.com/sushilks/hamlet v0.0.0-20210413232346-0111b8bb9a4b

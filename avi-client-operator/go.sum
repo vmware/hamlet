@@ -550,6 +550,8 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/sushilks/hamlet v0.0.0-20210413232346-0111b8bb9a4b h1:YezC6m+oIgujU+1Oos51JaVzV6E+o3phh2V8d7soRBI=
 github.com/sushilks/hamlet v0.0.0-20210413232346-0111b8bb9a4b/go.mod h1:sJmL9qRlWmD5pJNrVGIknGVBOmU/T4XE1XqzHsS1PTQ=
+github.com/sushilks/hamlet v0.0.0-20210414003217-bca1f0357614 h1:MGxDyRa9rAweOG8gwX1Vr+u5SqFFeilFtfFXhFStedw=
+github.com/sushilks/hamlet v0.0.0-20210414003217-bca1f0357614/go.mod h1:sJmL9qRlWmD5pJNrVGIknGVBOmU/T4XE1XqzHsS1PTQ=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=

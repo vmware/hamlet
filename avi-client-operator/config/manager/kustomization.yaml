@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: gcr.io/nsx-sm/sushils/hamlet-avi-client
-  newTag: v0.1.0
+  newTag: v0.1.1

@@ -1,7 +1,38 @@
 apiVersion: hamlet.tanzu.vmware.com/v1alpha1
 kind: AVISync
 metadata:
-  name: avisync-sample
+  name: avi-test2
 spec:
-  # Add fields here
-  foo: bar
+  avi-controller-location: http://somewhere.on.internet.example.com
+  avi-controller-version: 1.2.3
+  hamlet-server-location: http://hamlet.tsm.tanzu.vmware.com
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: avi-test2
+type: hamlet.tanzu.vmware.com/avi-hamlet-client
+stringData:
+  avi-username: "tsm-avi-user"
+  avi-password: "tms-avi-password-1234"
+  avi-tenant: "admin"
+  hamlet-token: "alknv3niN*(#nv3"
+  hamlet-server-cert: |
+      -----BEGIN CERTIFICATE-----
+      MIICpDCCAYwCCQC21sHBdyP4zjANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAls
+      b2NhbGhvc3QwHhcNMjEwMzMxMTgyNjA3WhcNMzEwMzI5MTgyNjA3WjAUMRIwEAYD
+      VQQDDAlsb2NhbGhvc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDX
+      gquBvFYYCBo4SUAeXbBJXnMBssTSzYDEbTNvQcX1Ni8ETdmtMjXnMRTNyl63JR4Z
+      KQPmansZiZAOFvMNayn4vvmK7paor5K/BT688Ozh6TUy1HCZ5ViiTh8B011S8K2z
+      GytFLSb3fMGMHlhcNpcrDxYng+mPjc/4QfewtpVj8PROMDXLbO7mBiWbgpufjpMX
+      Xp3B9IvLunRaFJjfLv6g3xXzrtNhwK/o8Vbdb8gzOeNZVTTeJRfl2ZX5XYJFrOnI
+      v8QbtAZxB8/KPps7W9e1TLpw2H3hIGIT6kDDwVxXQ2TP61JoT41I/Fh7fpnPngX4
+      /v33MwvcnXclfVxP1QXbAgMBAAEwDQYJKoZIhvcNAQELBQADggEBAL+EqIeBNabm
+      lSWeE7ouRvX2Q1YF3eZC8urwOOaBMINUdPhO2gJT7WYvGaPMctbCDXYx+w1VSVWZ
+      UroDErlGjOOovEPQywgBxUv5ZriU4pYCysLLXFxGFu7BOt+KQ9SQ8xsHPE+xViEA
+      ooV+GBDdPbM9s9IcZqNCQaxfRg436mRuCjyeIUVDtEoUveKOUxIPksbaj2unj7NE
+      Y83SbWuCGPo5j+V8zgKNqQCgFu0ndHPoiflFnwGijzw44P2O2GRziZUkF39GUjIF
+      LOyE5lcOusuPi3SEUNsyhHH7hZNayoICZaePTDNHDDiI8GXxZDjR6yuVGpNkYzhB
+      czk/gPeNqdk=
+      -----END CERTIFICATE-----
+---
