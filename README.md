@@ -11,10 +11,10 @@ and VMware.
 
 The specification currently consists of the following APIs.
 
-* [Federated Resource Discovery API](api/resourcediscovery/v1alpha1/resource_discovery.proto)
+* [Federated Resource Discovery API](api/resourcediscovery/v1alpha1/resource_discovery_v1alpha1.proto)
   \- API to authenticate and securely distribute resources between federated
   service meshes.
-* [Federated Service Discovery API](api/types/v1alpha2/federated_service.proto)
+* [Federated Service Discovery API](api/types/v1alpha2/federated_service_v1alpha2.proto)
   \- API to discover, reach, authenticate, and securely communicate with
   federated services.
 
