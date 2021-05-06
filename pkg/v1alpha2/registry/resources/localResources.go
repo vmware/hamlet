@@ -26,7 +26,7 @@ type LocalResources interface {
 	// delete a resource from register, Delete notifies the deletion of a resource.
 	Delete(resourceId string) error
 
-	// get a snapshot of all the items stored in the registery
+	// get a snapshot of all the items stored in the registry
 	// used when a new stream is added as watcher for getting intial snapshot.
 	GetFull(resourceUrl string) (map[string](*any.Any), error)
 
@@ -41,7 +41,7 @@ type LocalResources interface {
 // messages to all registered federated service mesh publishers.
 type localResources struct {
 	resources                      map[string]*any.Any
-	publisherRegistery             publisher.Registry
+	publisherRegistry              publisher.Registry
 	onlyPublishResourcesWithChange bool
 	// mutex synchronizes the access to streams.
 	mutex *sync.Mutex
@@ -51,7 +51,7 @@ type localResources struct {
 func NewLocalResources(publisherReg publisher.Registry) LocalResources {
 	return &localResources{
 		resources:                      make(map[string]*any.Any),
-		publisherRegistery:             publisherReg,
+		publisherRegistry:              publisherReg,
 		onlyPublishResourcesWithChange: true,
 		mutex:                          &sync.Mutex{}}
 }
@@ -62,7 +62,7 @@ func (r *localResources) OnlyPublishResourcesWithChange(b bool) {
 // notifyPublishers notifies all the registered federated service mesh publishers
 // about the given resource change.
 func (r *localResources) notifyPublishers(id string, obj *any.Any, op rd.StreamResponse_Operation) error {
-	if err := r.publisherRegistery.Notify(id, obj, op); err != nil {
+	if err := r.publisherRegistry.Notify(id, obj, op); err != nil {
 		log.WithField("err", err).Errorln("Error occurred while notifying publisher")
 		return err
 	}

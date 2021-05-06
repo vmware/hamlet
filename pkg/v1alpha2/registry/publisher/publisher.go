@@ -22,7 +22,7 @@ var MaxStreamBufferSize uint32 = 4096
 type ResourceRegistry interface {
 	GetFull(resourceUrl string) (map[string](*any.Any), error)
 
-	// create/update a resource in registery,
+	// create/update a resource in registry,
 	// called by publisher
 	Upsert(resourceId string, message proto.Message) error
 
@@ -76,7 +76,7 @@ type publisher struct {
 
 	// resource registry will be local resources that need
 	// to be communicated to remote.
-	resourceRegistery ResourceRegistry
+	resourceRegistry ResourceRegistry
 
 	// mutex synchronizes the access to streams.
 	mutex *sync.Mutex
@@ -97,7 +97,7 @@ func (c *publisher) InitStream(resourceUrl string, resourceRegistry ResourceRegi
 	if _, found := c.streams[resourceUrl]; found {
 		return fmt.Errorf("Publisher already publishing to stream %s", resourceUrl)
 	}
-	c.resourceRegistery = resourceRegistry
+	c.resourceRegistry = resourceRegistry
 	messages, err := resourceRegistry.GetFull(resourceUrl)
 	if err != nil {
 		log.WithFields(log.Fields{

@@ -15,7 +15,7 @@ import (
 )
 
 type ResourcesHandler interface {
-	// create/update a resource in registery,
+	// create/update a resource in registry,
 	// called by publisher
 	Upsert(consumerId string, resourceId string, message *any.Any) error
 
