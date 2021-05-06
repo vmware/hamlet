@@ -130,12 +130,11 @@ func Handler(
 			}
 
 		case sendData, sendDataOk := <-pubChan:
-			// log.Infof("GOT Publish DATA FROM publisher %v\n", sendData)
 			if !sendDataOk {
 				done = true
 			}
 			if sendData.Error != nil {
-				// TODO :
+				log.Errorf("Error while waiting on pubChan %v\n", sendData.Error)
 			}
 			r := &rd.BidirectionalStream{}
 			r.Response = sendData.Object

@@ -14,11 +14,8 @@ import (
 // FederatedServiceObserver is an observer that receives notifications when
 // federated services are created, updated, or deleted.
 type FederatedServiceObserverV1Alpha2 interface {
-	// OnCreate is called when a new federated service is created.
-	OnCreate(providerId string, svc *types2.FederatedService) error
-
-	// OnUpdate is called when an existing federated service is updated.
-	OnUpdate(providerId string, svc *types2.FederatedService) error
+	// OnUpsert is called when a new federated service is created or update.
+	OnUpsert(providerId string, svc *types2.FederatedService) error
 
 	// OnDelete is called when an existing federated service is deleted.
 	OnDelete(providerId string, svc *types2.FederatedService) error
@@ -32,7 +29,7 @@ type federatedServiceObserverDelegate struct {
 	observer FederatedServiceObserverV1Alpha2
 }
 
-func (d *federatedServiceObserverDelegate) OnCreate(resourceUrl, providerId string, r *any.Any) error {
+func (d *federatedServiceObserverDelegate) OnUpsert(resourceUrl, providerId string, r *any.Any) error {
 	fs := &types2.FederatedService{}
 	if err := ptypes.UnmarshalAny(r, fs); err != nil {
 		log.WithFields(log.Fields{
@@ -41,19 +38,7 @@ func (d *federatedServiceObserverDelegate) OnCreate(resourceUrl, providerId stri
 		}).Errorln("Error occurred while unmarshalling a federated service")
 		return err
 	}
-	return d.observer.OnCreate(providerId, fs)
-}
-
-func (d *federatedServiceObserverDelegate) OnUpdate(resourceUrl, providerId string, r *any.Any) error {
-	fs := &types2.FederatedService{}
-	if err := ptypes.UnmarshalAny(r, fs); err != nil {
-		log.WithFields(log.Fields{
-			"resource": r,
-			"err":      err,
-		}).Errorln("Error occurred while unmarshalling a federated service")
-		return err
-	}
-	return d.observer.OnUpdate(providerId, fs)
+	return d.observer.OnUpsert(providerId, fs)
 }
 
 func (d *federatedServiceObserverDelegate) OnDelete(resourceUrl, providerId string, r *any.Any) error {

@@ -12,11 +12,8 @@ import (
 )
 
 type ResourceObserver interface {
-	// OnCreate is called when a new resource is created.
-	OnCreate(resourceUrl string, providerId string, dt *any.Any) error
-
-	// OnUpdate is called when an existing resource is updated.
-	OnUpdate(resourceUrl string, providerId string, dt *any.Any) error
+	// OnUpsert is called when a new resource is created or updated.
+	OnUpsert(resourceUrl string, providerId string, dt *any.Any) error
 
 	// OnDelete is called when an existing resource is deleted.
 	OnDelete(resourceUrl string, providerId string, dt *any.Any) error
@@ -70,7 +67,7 @@ func (r *remoteResources) WatchRemoteResources(id string, observer ResourceObser
 	r.observers[id] = observer
 	for providerId, p := range r.resources {
 		for _, v := range p {
-			err := observer.OnCreate(v.TypeUrl, providerId, v)
+			err := observer.OnUpsert(v.TypeUrl, providerId, v)
 			if err != nil {
 				return err
 			}
@@ -97,23 +94,13 @@ func (r *remoteResources) Upsert(providerId string, resourceId string, obj *any.
 		p = make(map[string]*any.Any)
 		r.resources[providerId] = p
 	}
-	if _, ok := p[resourceId]; ok {
-		p[resourceId] = obj
-		for _, o := range r.observers {
-			err := o.OnUpdate(obj.TypeUrl, providerId, obj)
-			if err != nil {
-				return err
-			}
+	p[resourceId] = obj
+	for _, o := range r.observers {
+		err := o.OnUpsert(obj.TypeUrl, providerId, obj)
+		if err != nil {
+			return err
 		}
-	} else {
-		p[resourceId] = obj
-		for _, o := range r.observers {
-			err := o.OnCreate(obj.TypeUrl, providerId, obj)
-			if err != nil {
-				return err
-			}
 
-		}
 	}
 	return nil
 }

@@ -13,13 +13,8 @@ type federatedServiceObserver struct {
 	access.FederatedServiceObserverV1Alpha2
 }
 
-func (o *federatedServiceObserver) OnCreate(providerId string, fs *types2.FederatedService) error {
-	log.Infof("server:RemoteResources:Federated service %s was created from provider %s\n", fs.GetFqdn(), providerId)
-	return nil
-}
-
-func (o *federatedServiceObserver) OnUpdate(providerId string, fs *types2.FederatedService) error {
-	log.Infof("server:RemoteResources:Federated service %s was updated from provider %s\n", fs.GetFqdn(), providerId)
+func (o *federatedServiceObserver) OnUpsert(providerId string, fs *types2.FederatedService) error {
+	log.Infof("server:RemoteResources:Federated service %s was created/updated from provider %s\n", fs.GetFqdn(), providerId)
 	return nil
 }
 

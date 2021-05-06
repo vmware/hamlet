@@ -1,4 +1,4 @@
-// Copyright 2019 VMware, Inc. All Rights Reserved.
+// Copyright 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 syntax = "proto3";
@@ -26,7 +26,7 @@ message FederatedService {
   // REQUIRED. The FQDN (Fully Qualified Domain Name) uniquely identifies the
   // federated service. The FQDN is used by consumer platforms as a DNS name to
   // access the imported FederatedService. The consumer platform DNS can be
-  // programmed to reference the Ingress of the imported FederatedService. 
+  // programmed to reference the Ingress of the imported FederatedService.
   string fqdn = 5;
 
   reserved 6;
