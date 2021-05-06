@@ -1,4 +1,4 @@
-# Copyright 2019 VMware, Inc. All Rights Reserved.
+# Copyright 2021 VMware, Inc. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 # Constants
@@ -67,21 +67,35 @@ clean:
 
 # Start the server
 # Usage: make start-server
-.PHONY: start-server
+.PHONY: start-server start-server-v1 start-server-v2
 start-server:
 	go run -v server/main.go start \
 		--root-ca-cert rootCA.crt \
 		--peer-cert server.crt \
 		--peer-key server.key \
-		--port 8001
+		--port 8001 \
+		--api-version ${API_VERSION}
+
+start-server-v1:
+	API_VERSION="v1alpha1" make start-server
+
+start-server-v2:
+	API_VERSION="v1alpha2" make start-server
 
 # Start the client
 # Usage: make start-client
-.PHONY: start-client
+.PHONY: start-client start-client-v1 start-client-v2
 start-client:
 	go run -v client/main.go start \
 		--root-ca-cert rootCA.crt \
 		--peer-cert client.crt \
 		--peer-key client.key \
 		--insecure-skip-verify \
-		--server-addr ":8001"
+		--server-addr ":8001" \
+		--api-version ${API_VERSION}
+
+start-client-v1:
+	API_VERSION="v1alpha1" make start-client
+
+start-client-v2:
+	API_VERSION="v1alpha2" make start-client

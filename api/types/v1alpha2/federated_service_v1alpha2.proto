@@ -42,7 +42,7 @@ message FederatedService {
   reserved 8;
   reserved 'protocols';
 
-  // Endpoint represents the endpoint that provides access to a federated 
+  // Endpoint represents the endpoint that provides access to a federated
   // service in the service owner platform. For example, this can be an
   // ingress.
   message Endpoint {
@@ -58,7 +58,7 @@ message FederatedService {
     // one or more Endpoint. If there are no matches, the Instance is
     // associated to all Endpoint.
     repeated string labels = 3;
-    
+
     // The description of the Endpoint.
     string description = 4;
   }
@@ -102,7 +102,7 @@ message FederatedService {
     // matching label must be provided. If there are no matches, the Endpoint is
     // associated to all Instance.
     repeated string endpoint_selector = 4;
-    
+
     // The description of the Instance.
     string description = 5;
   }

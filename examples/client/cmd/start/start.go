@@ -1,11 +1,15 @@
-// Copyright 2019 VMware, Inc. All Rights Reserved.
+// Copyright 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package start
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
-	"github.com/vmware/hamlet/examples/client/pkg/lifecycle"
+	"github.com/vmware/hamlet/examples/client/pkg/lifecycle_v1alpha1"
+	"github.com/vmware/hamlet/examples/client/pkg/lifecycle_v1alpha2"
 )
 
 // flagSet represents the flags available with the start subcommand.
@@ -15,6 +19,7 @@ type flagSet struct {
 	PeerKey            string
 	ServerAddr         string
 	InsecureSkipVerify bool
+	ApiVersion         string
 }
 
 // NewCommand returns a new Command instance for the start subcommand.
@@ -26,9 +31,19 @@ func NewCommand() *cobra.Command {
 		Short: "Start the client",
 		Long:  "Start the client",
 		Run: func(cmd *cobra.Command, args []string) {
-			lifecycle.Start(flags.RootCACert, flags.PeerCert,
-				flags.PeerKey, flags.ServerAddr,
-				flags.InsecureSkipVerify)
+			if flags.ApiVersion == "v1alpha1" {
+				lifecycle_v1alpha1.Start(flags.RootCACert, flags.PeerCert,
+					flags.PeerKey, flags.ServerAddr,
+					flags.InsecureSkipVerify)
+			} else if flags.ApiVersion == "v1alpha2" {
+				lifecycle_v1alpha2.Start(flags.RootCACert, flags.PeerCert,
+					flags.PeerKey, flags.ServerAddr,
+					flags.InsecureSkipVerify, "token-1234")
+			} else {
+				fmt.Fprintf(os.Stderr, "Could not find version %s for client\n", flags.ApiVersion)
+				os.Exit(1)
+			}
+
 		},
 	}
 
@@ -38,8 +53,11 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(&flags.ServerAddr, "server-addr", "localhost:8000", "the server's address")
 	cmd.Flags().BoolVar(&flags.InsecureSkipVerify, "insecure-skip-verify", false, "whether normal verification should be ignored")
 
-	cmd.MarkFlagRequired("root-ca-cert")
-	cmd.MarkFlagRequired("peer-cert")
-	cmd.MarkFlagRequired("peer-key")
+	cmd.Flags().StringVar(&flags.ApiVersion, "api-version", "", "api version to use v1alpha1 or v1alpha2")
+
+	// cmd.MarkFlagRequired("root-ca-cert")
+	// cmd.MarkFlagRequired("peer-cert")
+	// cmd.MarkFlagRequired("peer-key")
+	cmd.MarkFlagRequired("api-version")
 	return cmd
 }

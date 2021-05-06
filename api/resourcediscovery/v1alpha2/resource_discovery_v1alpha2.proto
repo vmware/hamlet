@@ -1,4 +1,4 @@
-// Copyright 2019 VMware, Inc. All Rights Reserved.
+// Copyright 2021 VMware, Inc. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 syntax = "proto3";
@@ -53,6 +53,8 @@ message StreamRequest {
   // context which will be used for coorelation between req/response
   // on first call the context will be set and will be returned with all responses.
   // on future response as ack the same context will be used.
+  // With the server now being able to handle multiple clients, the context is needed
+  // to scope the data publised by each client.
   string context = 4;
 }
 
@@ -66,8 +68,11 @@ message StreamResponse {
   // Example: "type.googleapis.com/federation.types.v1alpha2.FederatedService"
   string resource_url = 2;
 
-  // REQUIRED. The typed resource in relation to which an operation is to be
-  // performed.
+  // REQUIRED. The id of the resource that is being transfered.
+  // The resource field captures different types of resource that can be of different versions.
+  // resource_id fields uniquely identifies the resource being communicated.
+  // from implementation point of view adding this field allows the client/server side to not
+  // need to parse the content of resource filed and just treat it as pass through data.
   string resource_id = 3;
 
   // REQUIRED. The typed resource in relation to which an operation is to be
@@ -80,7 +85,7 @@ message StreamResponse {
     // Specifies an unknown operation.
     UNKNOWN = 0;
 
-    // Specifies a create operation.
+    // Specifies a create or update operation.
     UPSERT = 1;
 
     // Specifies a delete operation.
