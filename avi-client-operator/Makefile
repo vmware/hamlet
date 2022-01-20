@@ -38,6 +38,11 @@ deploy: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/default | kubectl apply -f -
 
+yaml: manifests
+	cd config/manager && kustomize edit set image controller=${IMG}
+	kustomize build config/crd > deployment/avi-hamlet-operator.yaml
+	echo "---" >> deployment/avi-hamlet-operator.yaml
+	kustomize build config/default >> deployment/avi-hamlet-operator.yaml
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases

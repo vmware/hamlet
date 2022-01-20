@@ -54,12 +54,12 @@ func (sh *aviSyncHandler) createAviSync(ctx context.Context, ctxCancel context.C
 					// get /sslkeyandcertificate/{uuid}
 					//   it has certificate associated with the service
 					EPPortSSL := int32(0)
-					EPPort := int32(0)
+					// EPPort := int32(0)
 					for _, svcItm := range vsItm.Services {
 						if *svcItm.EnableSsl {
 							EPPortSSL = *svcItm.Port
-						} else {
-							EPPort = *svcItm.Port
+							// } else {
+							// 	EPPort = *svcItm.Port
 						}
 					}
 
@@ -111,14 +111,14 @@ func (sh *aviSyncHandler) createAviSync(ctx context.Context, ctxCancel context.C
 							sh.log.Error(err, "Virtual service ApplicationProfile get from avi resulted in error")
 						} else {
 							if *vsapp.Type == "APPLICATION_PROFILE_TYPE_HTTP" {
-								protocol = "HTTP"
-							} else if *vsapp.Type == "APPLICATION_PROFILE_TYPE_SSL" {
 								protocol = "HTTPS"
+							} else if *vsapp.Type == "APPLICATION_PROFILE_TYPE_SSL" {
+								protocol = "TLS"
 							}
-							sh.log.Info("             ",
-								"Type", *vsapp.Type,
-								"Inferred Protocol", protocol)
 						}
+						sh.log.Info("             ",
+							"Type", *vsapp.Type,
+							"Inferred Protocol", protocol)
 					}
 					// get the port for the application
 					svcPort := int32(0)
@@ -164,10 +164,10 @@ func (sh *aviSyncHandler) createAviSync(ctx context.Context, ctxCancel context.C
 						if svcDNS != "" {
 							svcFqdn = svcDNS
 						}
-						gwPort := EPPort
-						if protocol == "HTTPS" {
-							gwPort = EPPortSSL
-						}
+						//gwPort := EPPort
+						//if protocol == "HTTPS" {
+						gwPort := EPPortSSL
+						//}
 						sh.log.Info("             ",
 							"gwPort", gwPort,
 							"svcPort", svcPort,
@@ -205,21 +205,27 @@ func (sh *aviSyncHandler) createAviSync(ctx context.Context, ctxCancel context.C
 							Endpoints: ep,
 							Instances: ins,
 						}
+						// EPPortSSL
 						if len(svc.Endpoints) > 0 && svcPort != 0 && gwPort != 0 {
 							svcListAdd[svcFqdn] = true
 							if err := hClient.Upsert(svc.Fqdn, svc); err != nil {
 								log.Error(err, "Error occurred while creating service", "svc", svc)
 							}
 							log.Info("HamletClient: Created a resource", "resource", svc.Fqdn)
+						} else {
+							log.Info("HamletClient: Skipped a Resources a resource", "resource", svc.Fqdn,
+								"endpointLength", len(svc.Endpoints),
+								"svcPort", svcPort,
+								"gwPort", gwPort)
 						}
 					}
 				}
 				// remove the items that did not get updated from the registry
 				rlist := hClient.GetAllLocalResourceIDs("type.googleapis.com/federation.types.v1alpha2.FederatedService")
-				for _, ritm := range rlist {
-					if _, ok := svcListAdd[ritm]; !ok {
-						if err := hClient.Delete(ritm); err != nil {
-							log.Error(err, "Error occurred while Deleteing resource", "id", ritm)
+				for _, rItem := range rlist {
+					if _, ok := svcListAdd[rItem]; !ok {
+						if err := hClient.Delete(rItem); err != nil {
+							log.Error(err, "Error occurred while Deleteing resource", "id", rItem)
 						}
 					}
 				}

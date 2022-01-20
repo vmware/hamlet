@@ -16,3 +16,5 @@ require (
 	sigs.k8s.io/controller-runtime v0.5.0
 )
 
+// replace github.com/vmware/hamlet => /Users/sushils/work/vmware/allspark/hamlet
+replace github.com/vmware/hamlet => github.com/sushilks/hamlet v0.0.1-alpha.1
