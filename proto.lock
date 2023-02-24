@@ -1,7 +1,7 @@
 {
   "definitions": [
     {
-      "protopath": "api:/:resourcediscovery:/:v1alpha1:/:resource_discovery.proto",
+      "protopath": "api:/:resourcediscovery:/:v1alpha1:/:resource_discovery_v1alpha1.proto",
       "def": {
         "enums": [
           {
@@ -106,7 +106,7 @@
       }
     },
     {
-      "protopath": "api:/:types:/:v1alpha1:/:federated_service.proto",
+      "protopath": "api:/:types:/:v1alpha1:/:federated_service_v1alpha1.proto",
       "def": {
         "messages": [
           {
